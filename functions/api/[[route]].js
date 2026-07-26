@@ -1,7 +1,6 @@
 // ============================================================
 // TIMBR - Complete Backend API
 // Single file: functions/api/[[route]].js
-// No frameworks. No libraries. Pure JavaScript.
 // ============================================================
 
 // --- Crypto Helpers ---
@@ -35,10 +34,12 @@ async function verifyToken(token) {
     if (parts.length !== 3) return null;
     const [header64, payload64, signature64] = parts;
     const message = encoder.encode(`${header64}.${payload64}`);
-    const signature = Uint8Array.from(atob(signature64.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+    const sigStr = signature64.replace(/-/g, '+').replace(/_/g, '/');
+    const signature = Uint8Array.from(atob(sigStr), c => c.charCodeAt(0));
     const isValid = await crypto.subtle.verify('HMAC', key, signature, message);
     if (!isValid) return null;
-    const payload = JSON.parse(atob(payload64.replace(/-/g, '+').replace(/_/g, '/')));
+    const payloadStr = payload64.replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(payloadStr));
     if (payload.exp < Date.now()) return null;
     return payload;
   } catch {
@@ -75,7 +76,6 @@ async function getUser(request) {
 
 // --- Database Setup ---
 async function ensureTables(db) {
-  // Users table
   await db.prepare(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -91,7 +91,6 @@ async function ensureTables(db) {
     )
   `).run();
 
-  // Study sessions table
   await db.prepare(`
     CREATE TABLE IF NOT EXISTS study_sessions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -112,7 +111,6 @@ async function ensureTables(db) {
     )
   `).run();
 
-  // Study tasks table
   await db.prepare(`
     CREATE TABLE IF NOT EXISTS study_tasks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -125,7 +123,6 @@ async function ensureTables(db) {
     )
   `).run();
 
-  // Notifications table
   await db.prepare(`
     CREATE TABLE IF NOT EXISTS notifications (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -146,7 +143,6 @@ async function ensureTables(db) {
     )
   `).run();
 
-  // Notification reads table
   await db.prepare(`
     CREATE TABLE IF NOT EXISTS notification_reads (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -158,7 +154,6 @@ async function ensureTables(db) {
     )
   `).run();
 
-  // Audit logs table
   await db.prepare(`
     CREATE TABLE IF NOT EXISTS audit_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -170,7 +165,6 @@ async function ensureTables(db) {
     )
   `).run();
 
-  // Admin master key table
   await db.prepare(`
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
@@ -195,13 +189,11 @@ async function ensureTables(db) {
     VALUES ('admin', 'Admin', 'text.me.md.alamin@gmail.com', ?, 'admin', 1, 0)
   `).bind(adminHash).run();
 
-  // Default master key
   await db.prepare(`
     INSERT OR IGNORE INTO settings (key, value) VALUES ('master_key', 'timbr-master-2024')
   `).run();
 }
 
-// --- Migration Helper ---
 async function runMigrations(db) {
   const migrations = [
     "ALTER TABLE users ADD COLUMN device_fingerprint TEXT",
@@ -220,22 +212,21 @@ async function runMigrations(db) {
   }
 }
 
-// --- Route Handlers ---
+// ============================================================
+// ROUTE HANDLERS
+// ============================================================
 
 // Auth routes
 async function handleAuth(method, path, body, db) {
-  // POST /api/auth/register
   if (method === 'POST' && path === '/auth/register') {
     const { username, name, email, password, device_fingerprint } = body;
     if (!username || !name || !email || !password) return err('All fields required', 400);
     
-    // Check device fingerprint
     if (device_fingerprint) {
       const existing = await db.prepare('SELECT id FROM users WHERE device_fingerprint = ?').bind(device_fingerprint).first();
       if (existing) return err('An account already exists on this device', 400);
     }
     
-    // Check username uniqueness
     const existingUser = await db.prepare('SELECT id FROM users WHERE username = ? OR email = ?').bind(username, email).first();
     if (existingUser) return err('Username or email already exists', 400);
     
@@ -244,14 +235,12 @@ async function handleAuth(method, path, body, db) {
       'INSERT INTO users (username, name, email, password_hash, device_fingerprint, approved) VALUES (?, ?, ?, ?, ?, 0)'
     ).bind(username, name, email, hash, device_fingerprint || null).run();
     
-    // Audit log
     await db.prepare('INSERT INTO audit_logs (action, details, target_user) VALUES (?, ?, ?)')
       .bind('User registered', `Username: ${username}`, result.meta.last_row_id).run();
     
     return json({ message: 'Registration successful. Awaiting approval.' }, 201);
   }
 
-  // POST /api/auth/login
   if (method === 'POST' && path === '/auth/login') {
     const { email, password } = body;
     if (!email || !password) return err('Email and password required', 400);
@@ -285,7 +274,6 @@ async function handleAuth(method, path, body, db) {
     });
   }
 
-  // POST /api/auth/verify-master-key
   if (method === 'POST' && path === '/auth/verify-master-key') {
     const { key } = body;
     const setting = await db.prepare("SELECT value FROM settings WHERE key = 'master_key'").first();
@@ -297,10 +285,9 @@ async function handleAuth(method, path, body, db) {
     return json({ token });
   }
 
-  // PUT /api/auth/change-master-key (admin only, requires master token)
   if (method === 'PUT' && path === '/auth/change-master-key') {
-    const user = await getUser({ headers: { get: () => `Bearer ${body.master_token}` } });
-    if (!user || !user.master) return err('Master access required', 403);
+    const payload = await verifyToken(body.master_token);
+    if (!payload || !payload.master) return err('Master access required', 403);
     if (!body.new_key) return err('New key required', 400);
     await db.prepare("UPDATE settings SET value = ? WHERE key = 'master_key'").bind(body.new_key).run();
     return json({ message: 'Master key updated' });
@@ -313,13 +300,12 @@ async function handleAuth(method, path, body, db) {
 async function handleUser(method, path, body, db, user) {
   const userId = user.id;
 
-  // GET /api/user/profile
   if (method === 'GET' && path === '/user/profile') {
     const profile = await db.prepare('SELECT id, username, name, email, role, approved, blocked, created_at FROM users WHERE id = ?').bind(userId).first();
+    if (!profile) return err('User not found', 404);
     return json(profile);
   }
 
-  // PUT /api/user/profile
   if (method === 'PUT' && path === '/user/profile') {
     const { name, username } = body;
     if (username) {
@@ -331,9 +317,9 @@ async function handleUser(method, path, body, db, user) {
     return json({ message: 'Profile updated' });
   }
 
-  // PUT /api/user/change-password
   if (method === 'PUT' && path === '/user/change-password') {
     const { oldPassword, newPassword } = body;
+    if (!oldPassword || !newPassword) return err('Both passwords required', 400);
     const profile = await db.prepare('SELECT password_hash FROM users WHERE id = ?').bind(userId).first();
     const oldHash = await sha256(oldPassword);
     if (oldHash !== profile.password_hash) return err('Current password incorrect', 400);
@@ -342,21 +328,17 @@ async function handleUser(method, path, body, db, user) {
     return json({ message: 'Password changed' });
   }
 
-  // GET /api/user/dashboard
   if (method === 'GET' && path === '/user/dashboard') {
     const today = new Date().toISOString().split('T')[0];
     
-    // Today's sessions
     const todaySessions = await db.prepare(
       "SELECT * FROM study_sessions WHERE user_id = ? AND study_date = ? ORDER BY created_at DESC"
     ).bind(userId, today).all();
     
-    // Recent sessions
     const recentSessions = await db.prepare(
       "SELECT * FROM study_sessions WHERE user_id = ? ORDER BY created_at DESC LIMIT 10"
     ).bind(userId).all();
     
-    // Active notifications
     const notifications = await db.prepare(`
       SELECT n.*, CASE WHEN nr.id IS NOT NULL THEN 1 ELSE 0 END as is_read
       FROM notifications n
@@ -369,7 +351,6 @@ async function handleUser(method, path, body, db, user) {
       LIMIT 5
     `).bind(userId).all();
     
-    // Weekly stats
     const weekStart = new Date();
     weekStart.setDate(weekStart.getDate() - weekStart.getDay());
     const weekStartStr = weekStart.toISOString().split('T')[0];
@@ -395,7 +376,6 @@ async function handleUser(method, path, body, db, user) {
     });
   }
 
-  // GET /api/user/backup
   if (method === 'GET' && path === '/user/backup') {
     const sessions = await db.prepare('SELECT * FROM study_sessions WHERE user_id = ? ORDER BY created_at').bind(userId).all();
     const tasks = await db.prepare('SELECT * FROM study_tasks WHERE user_id = ? ORDER BY created_at').bind(userId).all();
@@ -433,71 +413,82 @@ async function handleSessions(method, path, body, db, user) {
   const userId = user.id;
   const sessionMatch = path.match(/^\/sessions\/(\d+)$/);
   
-  // GET /api/sessions
   if (method === 'GET' && path === '/sessions') {
-    const { date, subject, status, page = 1, limit = 20 } = body || {};
-    let sql = 'SELECT * FROM study_sessions WHERE user_id = ?';
-    const params = [userId];
+    const date = body.date || null;
+    const subject = body.subject || null;
+    const status = body.status || null;
+    const page = parseInt(body.page) || 1;
+    const limit = parseInt(body.limit) || 20;
     
-    if (date) { sql += ' AND study_date = ?'; params.push(date); }
-    if (subject) { sql += ' AND subject = ?'; params.push(subject); }
-    if (status) { sql += ' AND status = ?'; params.push(status); }
+    let sql = 'SELECT * FROM study_sessions WHERE user_id = ?';
+    let countSql = 'SELECT COUNT(*) as count FROM study_sessions WHERE user_id = ?';
+    const params = [userId];
+    const countParams = [userId];
+    
+    if (date) { 
+      sql += ' AND study_date = ?'; 
+      countSql += ' AND study_date = ?';
+      params.push(date); 
+      countParams.push(date);
+    }
+    if (subject) { 
+      sql += ' AND subject = ?'; 
+      countSql += ' AND subject = ?';
+      params.push(subject); 
+      countParams.push(subject);
+    }
+    if (status) { 
+      sql += ' AND status = ?'; 
+      countSql += ' AND status = ?';
+      params.push(status); 
+      countParams.push(status);
+    }
     
     sql += ' ORDER BY study_date DESC, created_at DESC LIMIT ? OFFSET ?';
     params.push(limit, (page - 1) * limit);
     
     const sessions = await db.prepare(sql).bind(...params).all();
-    const total = await db.prepare('SELECT COUNT(*) as count FROM study_sessions WHERE user_id = ?').bind(userId).first();
+    const total = await db.prepare(countSql).bind(...countParams).first();
     
     return json({ sessions: sessions.results, total: total.count, page, limit });
   }
 
-  // POST /api/sessions
   if (method === 'POST' && path === '/sessions') {
-    const { title, subject, planned_start, planned_end, study_date, note, status = 'Planned' } = body;
+    const { title, subject, planned_start, planned_end, study_date, note, status } = body;
     if (!title || !subject || !study_date) return err('Title, subject, and date required', 400);
     
     const result = await db.prepare(
       'INSERT INTO study_sessions (user_id, title, subject, planned_start, planned_end, study_date, note, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-    ).bind(userId, title, subject, planned_start || null, planned_end || null, study_date, note || null, status).run();
+    ).bind(userId, title, subject, planned_start || null, planned_end || null, study_date, note || null, status || 'Planned').run();
     
     return json({ id: result.meta.last_row_id, message: 'Session created' }, 201);
   }
 
-  // GET /api/sessions/:id
   if (method === 'GET' && sessionMatch) {
     const session = await db.prepare('SELECT * FROM study_sessions WHERE id = ? AND user_id = ?').bind(sessionMatch[1], userId).first();
     if (!session) return err('Session not found', 404);
     return json(session);
   }
 
-  // PUT /api/sessions/:id
   if (method === 'PUT' && sessionMatch) {
     const id = sessionMatch[1];
-    const session = await db.prepare('SELECT * FROM study_sessions WHERE id = ? AND user_id = ?').bind(id, userId).first();
-    if (!session) return err('Session not found', 404);
+    const existing = await db.prepare('SELECT id FROM study_sessions WHERE id = ? AND user_id = ?').bind(id, userId).first();
+    if (!existing) return err('Session not found', 404);
     
     const { title, subject, planned_start, planned_end, study_date, actual_start, actual_end, lost_minutes, lost_reason, note, status } = body;
     await db.prepare(`
       UPDATE study_sessions SET 
-        title = COALESCE(?, title),
-        subject = COALESCE(?, subject),
-        planned_start = COALESCE(?, planned_start),
-        planned_end = COALESCE(?, planned_end),
-        study_date = COALESCE(?, study_date),
-        actual_start = COALESCE(?, actual_start),
-        actual_end = COALESCE(?, actual_end),
-        lost_minutes = COALESCE(?, lost_minutes),
-        lost_reason = COALESCE(?, lost_reason),
-        note = COALESCE(?, note),
-        status = COALESCE(?, status)
+        title = COALESCE(?, title), subject = COALESCE(?, subject),
+        planned_start = COALESCE(?, planned_start), planned_end = COALESCE(?, planned_end),
+        study_date = COALESCE(?, study_date), actual_start = COALESCE(?, actual_start),
+        actual_end = COALESCE(?, actual_end), lost_minutes = COALESCE(?, lost_minutes),
+        lost_reason = COALESCE(?, lost_reason), note = COALESCE(?, note), status = COALESCE(?, status)
       WHERE id = ? AND user_id = ?
     `).bind(title, subject, planned_start, planned_end, study_date, actual_start, actual_end, lost_minutes, lost_reason, note, status, id, userId).run();
     
     return json({ message: 'Session updated' });
   }
 
-  // DELETE /api/sessions/:id
   if (method === 'DELETE' && sessionMatch) {
     await db.prepare('DELETE FROM study_sessions WHERE id = ? AND user_id = ?').bind(sessionMatch[1], userId).run();
     return json({ message: 'Session deleted' });
@@ -511,13 +502,11 @@ async function handleTasks(method, path, body, db, user) {
   const userId = user.id;
   const taskMatch = path.match(/^\/tasks\/(\d+)$/);
   
-  // GET /api/tasks
   if (method === 'GET' && path === '/tasks') {
     const tasks = await db.prepare('SELECT * FROM study_tasks WHERE user_id = ? ORDER BY completed ASC, created_at DESC').bind(userId).all();
     return json(tasks.results);
   }
 
-  // POST /api/tasks
   if (method === 'POST' && path === '/tasks') {
     const { title, subject } = body;
     if (!title || !subject) return err('Title and subject required', 400);
@@ -525,17 +514,15 @@ async function handleTasks(method, path, body, db, user) {
     return json({ id: result.meta.last_row_id, message: 'Task created' }, 201);
   }
 
-  // PUT /api/tasks/:id
   if (method === 'PUT' && taskMatch) {
     const { title, subject, completed } = body;
     await db.prepare(`
       UPDATE study_tasks SET title = COALESCE(?, title), subject = COALESCE(?, subject), completed = COALESCE(?, completed)
       WHERE id = ? AND user_id = ?
-    `).bind(title, subject, completed, taskMatch[1], userId).run();
+    `).bind(title || null, subject || null, completed !== undefined ? completed : null, taskMatch[1], userId).run();
     return json({ message: 'Task updated' });
   }
 
-  // DELETE /api/tasks/:id
   if (method === 'DELETE' && taskMatch) {
     await db.prepare('DELETE FROM study_tasks WHERE id = ? AND user_id = ?').bind(taskMatch[1], userId).run();
     return json({ message: 'Task deleted' });
@@ -544,34 +531,32 @@ async function handleTasks(method, path, body, db, user) {
   return err('Task route not found', 404);
 }
 
-// Notification routes (student)
+// Notification routes
 async function handleNotifications(method, path, body, db, user) {
   const userId = user.id;
   const notifMatch = path.match(/^\/notifications\/(\d+)\/read$/);
   
-  // GET /api/notifications
   if (method === 'GET' && path === '/notifications') {
     const notifications = await db.prepare(`
       SELECT n.*, CASE WHEN nr.id IS NOT NULL THEN 1 ELSE 0 END as is_read
       FROM notifications n
       LEFT JOIN notification_reads nr ON n.id = nr.notification_id AND nr.user_id = ?
       WHERE n.active = 1 
-        AND (n.audience = 'Everyone' OR n.audience = 'Students' OR n.audience = ?)
+        AND (n.audience = 'Everyone' OR n.audience = 'Students' OR n.audience = 'Admins')
         AND (n.start_date IS NULL OR n.start_date <= datetime('now'))
         AND (n.end_date IS NULL OR n.end_date >= datetime('now'))
       ORDER BY n.pinned DESC, n.created_at DESC
-    `).bind(userId, user.role === 'admin' ? 'Admins' : 'Students').all();
+    `).bind(userId).all();
     
     return json(notifications.results);
   }
 
-  // GET /api/notifications/unread-count
   if (method === 'GET' && path === '/notifications/unread-count') {
     const result = await db.prepare(`
       SELECT COUNT(*) as count FROM notifications n
       LEFT JOIN notification_reads nr ON n.id = nr.notification_id AND nr.user_id = ?
       WHERE n.active = 1 AND nr.id IS NULL
-        AND (n.audience = 'Everyone' OR n.audience = 'Students')
+        AND (n.audience = 'Everyone' OR n.audience = 'Students' OR n.audience = 'Admins')
         AND (n.start_date IS NULL OR n.start_date <= datetime('now'))
         AND (n.end_date IS NULL OR n.end_date >= datetime('now'))
     `).bind(userId).first();
@@ -579,7 +564,6 @@ async function handleNotifications(method, path, body, db, user) {
     return json({ count: result.count });
   }
 
-  // POST /api/notifications/:id/read
   if (method === 'POST' && notifMatch) {
     await db.prepare('INSERT OR IGNORE INTO notification_reads (notification_id, user_id) VALUES (?, ?)')
       .bind(notifMatch[1], userId).run();
@@ -593,15 +577,12 @@ async function handleNotifications(method, path, body, db, user) {
 async function handleStats(method, path, body, db, user) {
   const userId = user.id;
   
-  // GET /api/stats/daily
   if (method === 'GET' && path === '/stats/daily') {
-    const { date } = body || {};
-    const targetDate = date || new Date().toISOString().split('T')[0];
+    const targetDate = body.date || new Date().toISOString().split('T')[0];
     
     const stats = await db.prepare(`
       SELECT 
-        subject,
-        COUNT(*) as session_count,
+        subject, COUNT(*) as session_count,
         SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) as completed,
         SUM(CASE WHEN status = 'Partial' THEN 1 ELSE 0 END) as partial,
         SUM(CASE WHEN status = 'Missed' THEN 1 ELSE 0 END) as missed,
@@ -617,7 +598,6 @@ async function handleStats(method, path, body, db, user) {
     return json({ date: targetDate, stats: stats.results });
   }
 
-  // GET /api/stats/weekly
   if (method === 'GET' && path === '/stats/weekly') {
     const weekStart = new Date();
     weekStart.setDate(weekStart.getDate() - weekStart.getDay());
@@ -625,8 +605,7 @@ async function handleStats(method, path, body, db, user) {
     
     const stats = await db.prepare(`
       SELECT 
-        study_date,
-        COUNT(*) as session_count,
+        study_date, COUNT(*) as session_count,
         SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) as completed,
         COALESCE(SUM(CASE WHEN actual_end IS NOT NULL AND actual_start IS NOT NULL
           THEN (strftime('%s', actual_end) - strftime('%s', actual_start)) / 60.0 - COALESCE(lost_minutes, 0)
@@ -634,14 +613,12 @@ async function handleStats(method, path, body, db, user) {
         COALESCE(SUM(lost_minutes), 0) as lost_minutes
       FROM study_sessions
       WHERE user_id = ? AND study_date >= ?
-      GROUP BY study_date
-      ORDER BY study_date
+      GROUP BY study_date ORDER BY study_date
     `).bind(userId, weekStartStr).all();
     
     return json({ week_start: weekStartStr, stats: stats.results });
   }
 
-  // GET /api/stats/monthly
   if (method === 'GET' && path === '/stats/monthly') {
     const monthStart = new Date();
     monthStart.setDate(1);
@@ -649,8 +626,7 @@ async function handleStats(method, path, body, db, user) {
     
     const stats = await db.prepare(`
       SELECT 
-        subject,
-        COUNT(*) as session_count,
+        subject, COUNT(*) as session_count,
         SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) as completed,
         COALESCE(SUM(CASE WHEN actual_end IS NOT NULL AND actual_start IS NOT NULL
           THEN (strftime('%s', actual_end) - strftime('%s', actual_start)) / 60.0 - COALESCE(lost_minutes, 0)
@@ -663,19 +639,16 @@ async function handleStats(method, path, body, db, user) {
     return json({ month_start: monthStartStr, stats: stats.results });
   }
 
-  // GET /api/stats/subject-distribution
   if (method === 'GET' && path === '/stats/subject-distribution') {
     const stats = await db.prepare(`
       SELECT 
-        subject,
-        COUNT(*) as total_sessions,
+        subject, COUNT(*) as total_sessions,
         COALESCE(SUM(CASE WHEN actual_end IS NOT NULL AND actual_start IS NOT NULL
           THEN (strftime('%s', actual_end) - strftime('%s', actual_start)) / 60.0 - COALESCE(lost_minutes, 0)
           ELSE 0 END), 0) as total_minutes
       FROM study_sessions
       WHERE user_id = ?
-      GROUP BY subject
-      ORDER BY total_minutes DESC
+      GROUP BY subject ORDER BY total_minutes DESC
     `).bind(userId).all();
     
     return json(stats.results);
@@ -686,33 +659,32 @@ async function handleStats(method, path, body, db, user) {
 
 // Leaderboard routes
 async function handleLeaderboard(method, path, body, db, user) {
-  // GET /api/leaderboard?period=today|week|month|all
   if (method === 'GET' && path === '/leaderboard') {
-    const { period = 'today' } = body || {};
+    const period = body.period || 'today';
     let dateFilter = '';
     
     if (period === 'today') {
-      dateFilter = `AND s.study_date = '${new Date().toISOString().split('T')[0]}'`;
+      const today = new Date().toISOString().split('T')[0];
+      dateFilter = `AND s.study_date = '${today}'`;
     } else if (period === 'week') {
-      const ws = new Date(); ws.setDate(ws.getDate() - ws.getDay());
+      const ws = new Date(); 
+      ws.setDate(ws.getDate() - ws.getDay());
       dateFilter = `AND s.study_date >= '${ws.toISOString().split('T')[0]}'`;
     } else if (period === 'month') {
-      const ms = new Date(); ms.setDate(1);
+      const ms = new Date(); 
+      ms.setDate(1);
       dateFilter = `AND s.study_date >= '${ms.toISOString().split('T')[0]}'`;
     }
     
     const leaderboard = await db.prepare(`
       SELECT 
-        u.id,
-        u.username,
-        u.name,
-        COUNT(s.id) as session_count,
+        u.id, u.username, u.name, COUNT(s.id) as session_count,
         COALESCE(SUM(CASE WHEN s.actual_end IS NOT NULL AND s.actual_start IS NOT NULL
           THEN (strftime('%s', s.actual_end) - strftime('%s', s.actual_start)) / 60.0 - COALESCE(s.lost_minutes, 0)
           ELSE 0 END), 0) as total_minutes,
         ROUND(COALESCE(SUM(CASE WHEN s.actual_end IS NOT NULL AND s.actual_start IS NOT NULL
-          THEN (strftime('%s', s.actual_end) - strftime('%s', s.actual_start)) / 60.0 - COALESCE(s.lost_minutes, 0)
-          ELSE 0 END), 0) / 60.0, 1) as total_hours
+          THEN (strftime('%s', s.actual_end) - strftime('%s', s.actual_start)) / 3600.0 - COALESCE(s.lost_minutes, 0)/60.0
+          ELSE 0 END), 0), 1) as total_hours
       FROM users u
       LEFT JOIN study_sessions s ON u.id = s.user_id ${dateFilter} AND s.status = 'Completed'
       WHERE u.role = 'student' AND u.approved = 1 AND u.blocked = 0
@@ -731,7 +703,6 @@ async function handleLeaderboard(method, path, body, db, user) {
 async function handleAdmin(method, path, body, db, user) {
   if (user.role !== 'admin') return err('Admin access required', 403);
   
-  // GET /api/admin/dashboard
   if (method === 'GET' && path === '/admin/dashboard') {
     const totalUsers = await db.prepare('SELECT COUNT(*) as count FROM users').first();
     const pendingUsers = await db.prepare('SELECT COUNT(*) as count FROM users WHERE approved = 0 AND blocked = 0').first();
@@ -752,9 +723,7 @@ async function handleAdmin(method, path, body, db, user) {
       FROM users u
       LEFT JOIN study_sessions s ON u.id = s.user_id AND s.status = 'Completed'
       WHERE u.role = 'student'
-      GROUP BY u.id
-      ORDER BY total_hours DESC
-      LIMIT 10
+      GROUP BY u.id ORDER BY total_hours DESC LIMIT 10
     `).all();
     
     return json({
@@ -767,28 +736,36 @@ async function handleAdmin(method, path, body, db, user) {
     });
   }
 
-  // GET /api/admin/users
   if (method === 'GET' && path === '/admin/users') {
-    const { search, role, status, page = 1, limit = 20 } = body || {};
-    let sql = 'SELECT id, username, name, email, role, approved, blocked, created_at FROM users WHERE 1=1';
+    const search = body.search || null;
+    const role = body.role || null;
+    const status = body.status || null;
+    const page = parseInt(body.page) || 1;
+    const limit = parseInt(body.limit) || 15;
+    
+    let whereClause = 'WHERE 1=1';
     const params = [];
     
-    if (search) { sql += ' AND (username LIKE ? OR email LIKE ? OR name LIKE ?)'; params.push(`%${search}%`, `%${search}%`, `%${search}%`); }
-    if (role) { sql += ' AND role = ?'; params.push(role); }
-    if (status === 'pending') { sql += ' AND approved = 0 AND blocked = 0'; }
-    else if (status === 'approved') { sql += ' AND approved = 1 AND blocked = 0'; }
-    else if (status === 'blocked') { sql += ' AND blocked = 1'; }
+    if (search) { 
+      whereClause += ' AND (username LIKE ? OR email LIKE ? OR name LIKE ?)'; 
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`); 
+    }
+    if (role) { whereClause += ' AND role = ?'; params.push(role); }
+    if (status === 'pending') { whereClause += ' AND approved = 0 AND blocked = 0'; }
+    else if (status === 'approved') { whereClause += ' AND approved = 1 AND blocked = 0'; }
+    else if (status === 'blocked') { whereClause += ' AND blocked = 1'; }
     
-    sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+    const countResult = await db.prepare(`SELECT COUNT(*) as count FROM users ${whereClause}`).bind(...params).first();
+    
+    const sql = `SELECT id, username, name, email, role, approved, blocked, created_at FROM users ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
     params.push(limit, (page - 1) * limit);
     
     const users = await db.prepare(sql).bind(...params).all();
-    const total = await db.prepare('SELECT COUNT(*) as count FROM users').first();
     
-    return json({ users: users.results, total: total.count, page, limit });
+    return json({ users: users.results, total: countResult.count, page, limit });
   }
 
-  // PUT /api/admin/users/:id/approve
+  // Approve user
   const approveMatch = path.match(/^\/admin\/users\/(\d+)\/approve$/);
   if (method === 'PUT' && approveMatch) {
     await db.prepare('UPDATE users SET approved = 1 WHERE id = ?').bind(approveMatch[1]).run();
@@ -797,7 +774,7 @@ async function handleAdmin(method, path, body, db, user) {
     return json({ message: 'User approved' });
   }
 
-  // PUT /api/admin/users/:id/block
+  // Block user
   const blockMatch = path.match(/^\/admin\/users\/(\d+)\/block$/);
   if (method === 'PUT' && blockMatch) {
     await db.prepare('UPDATE users SET blocked = 1 WHERE id = ?').bind(blockMatch[1]).run();
@@ -806,7 +783,7 @@ async function handleAdmin(method, path, body, db, user) {
     return json({ message: 'User blocked' });
   }
 
-  // PUT /api/admin/users/:id/unblock
+  // Unblock user
   const unblockMatch = path.match(/^\/admin\/users\/(\d+)\/unblock$/);
   if (method === 'PUT' && unblockMatch) {
     await db.prepare('UPDATE users SET blocked = 0 WHERE id = ?').bind(unblockMatch[1]).run();
@@ -815,7 +792,7 @@ async function handleAdmin(method, path, body, db, user) {
     return json({ message: 'User unblocked' });
   }
 
-  // PUT /api/admin/users/:id/reset
+  // Reset user data
   const resetMatch = path.match(/^\/admin\/users\/(\d+)\/reset$/);
   if (method === 'PUT' && resetMatch) {
     await db.prepare('DELETE FROM study_sessions WHERE user_id = ?').bind(resetMatch[1]).run();
@@ -825,7 +802,7 @@ async function handleAdmin(method, path, body, db, user) {
     return json({ message: 'Study data reset' });
   }
 
-  // DELETE /api/admin/users/:id
+  // Delete user
   const deleteUserMatch = path.match(/^\/admin\/users\/(\d+)$/);
   if (method === 'DELETE' && deleteUserMatch) {
     const targetId = deleteUserMatch[1];
@@ -838,31 +815,32 @@ async function handleAdmin(method, path, body, db, user) {
     return json({ message: 'User deleted' });
   }
 
-  // POST /api/admin/users
+  // Create user
   if (method === 'POST' && path === '/admin/users') {
-    const { username, name, email, password, role = 'student' } = body;
+    const { username, name, email, password, role } = body;
     if (!username || !name || !email || !password) return err('All fields required', 400);
     const hash = await sha256(password);
     const result = await db.prepare(
       'INSERT INTO users (username, name, email, password_hash, role, approved, blocked) VALUES (?, ?, ?, ?, ?, 1, 0)'
-    ).bind(username, name, email, hash, role).run();
+    ).bind(username, name, email, hash, role || 'student').run();
     await db.prepare('INSERT INTO audit_logs (action, details, performed_by, target_user) VALUES (?, ?, ?, ?)')
       .bind('Admin created user', `Username: ${username}`, user.id, result.meta.last_row_id).run();
     return json({ id: result.meta.last_row_id, message: 'User created' }, 201);
   }
 
-  // Notification management
+  // Create notification
   if (method === 'POST' && path === '/admin/notifications') {
     const { title, message, type, image_url, button_url, button_text, pinned, active, popup, banner, audience, start_date, end_date } = body;
+    if (!title) return err('Title required', 400);
     const result = await db.prepare(
       'INSERT INTO notifications (title, message, type, image_url, button_url, button_text, pinned, active, popup, banner, audience, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-    ).bind(title, message, type, image_url, button_url, button_text, pinned ? 1 : 0, active ? 1 : 0, popup ? 1 : 0, banner ? 1 : 0, audience, start_date, end_date).run();
+    ).bind(title, message, type || 'Info', image_url, button_url, button_text, pinned ? 1 : 0, active !== undefined ? (active ? 1 : 0) : 1, popup ? 1 : 0, banner ? 1 : 0, audience || 'Everyone', start_date, end_date).run();
     await db.prepare('INSERT INTO audit_logs (action, details, performed_by) VALUES (?, ?, ?)')
       .bind('Notification created', `Title: ${title}`, user.id).run();
     return json({ id: result.meta.last_row_id }, 201);
   }
 
-  // PUT /api/admin/notifications/:id
+  // Update notification
   const notifEditMatch = path.match(/^\/admin\/notifications\/(\d+)$/);
   if (method === 'PUT' && notifEditMatch) {
     const { title, message, type, image_url, button_url, button_text, pinned, active, popup, banner, audience, start_date, end_date } = body;
@@ -876,32 +854,33 @@ async function handleAdmin(method, path, body, db, user) {
     return json({ message: 'Notification updated' });
   }
 
-  // DELETE /api/admin/notifications/:id
+  // Delete notification
   const notifDelMatch = path.match(/^\/admin\/notifications\/(\d+)\/delete$/);
   if (method === 'DELETE' && notifDelMatch) {
+    await db.prepare('DELETE FROM notification_reads WHERE notification_id = ?').bind(notifDelMatch[1]).run();
     await db.prepare('DELETE FROM notifications WHERE id = ?').bind(notifDelMatch[1]).run();
+    await db.prepare('INSERT INTO audit_logs (action, details, performed_by) VALUES (?, ?, ?)')
+      .bind('Notification deleted', '', user.id).run();
     return json({ message: 'Notification deleted' });
   }
 
-  // GET /api/admin/audit-logs
+  // Audit logs
   if (method === 'GET' && path === '/admin/audit-logs') {
     const logs = await db.prepare(`
       SELECT al.*, u.username as performer_name
       FROM audit_logs al
       LEFT JOIN users u ON al.performed_by = u.id
-      ORDER BY al.created_at DESC
-      LIMIT 100
+      ORDER BY al.created_at DESC LIMIT 100
     `).all();
     return json(logs.results);
   }
 
-  // GET /api/admin/settings
+  // Settings
   if (method === 'GET' && path === '/admin/settings') {
     const settings = await db.prepare("SELECT * FROM settings WHERE key != 'master_key'").all();
     return json(settings.results);
   }
 
-  // PUT /api/admin/settings
   if (method === 'PUT' && path === '/admin/settings') {
     const { site_name, announcement } = body;
     if (site_name) await db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('site_name', ?)").bind(site_name).run();
@@ -914,7 +893,9 @@ async function handleAdmin(method, path, body, db, user) {
   return err('Admin route not found', 404);
 }
 
-// --- Main Router ---
+// ============================================================
+// MAIN ROUTER
+// ============================================================
 export async function onRequest(context) {
   const { request, env } = context;
   const db = env.STUDY_DB;
@@ -934,12 +915,26 @@ export async function onRequest(context) {
     globalThis.__tablesReady = true;
   }
   
-  // Parse body for non-GET requests
+  // Parse body based on method
   let body = {};
-  if (method !== 'GET' && method !== 'OPTIONS') {
-    try { body = await request.json(); } catch {}
-  } else if (method === 'GET') {
-    // Parse query params into body for GET requests
+  
+  // For POST/PUT/PATCH - parse JSON body
+  if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
+    try { 
+      const contentType = request.headers.get('Content-Type') || '';
+      if (contentType.includes('application/json')) {
+        body = await request.json();
+      } else {
+        const text = await request.text();
+        try { body = JSON.parse(text); } catch { body = {}; }
+      }
+    } catch {
+      body = {};
+    }
+  }
+  
+  // For GET/DELETE - parse URL query parameters
+  if (method === 'GET' || method === 'DELETE') {
     for (const [key, value] of url.searchParams) {
       body[key] = value;
     }
@@ -953,7 +948,7 @@ export async function onRequest(context) {
     
     // Protected routes
     const user = await getUser(request);
-    if (!user && !path.startsWith('/auth')) {
+    if (!user) {
       return err('Authentication required', 401);
     }
     
@@ -982,7 +977,6 @@ export async function onRequest(context) {
     
     return err('Route not found', 404);
   } catch (e) {
-    console.error('API Error:', e);
     return err('Internal server error', 500);
   }
 }
