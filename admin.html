@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel — Timbr</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700&family=DM+Mono&family=Cabinet+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #05080f;
+  --surface: #0b0f1a;
+  --surface2: #111827;
+  --surface3: #161e2e;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.11);
+  --accent: #00d4aa;
+  --accent2: #00b894;
+  --accent-dim: rgba(0,212,170,0.08);
+  --white: #f0f4f8;
+  --gray: #7a8899;
+  --gray2: #a0adb8;
+  --red: #f0566a;
+  --red-dim: rgba(240,86,106,0.09);
+  --green: #10d48e;
+  --green-dim: rgba(16,212,142,0.09);
+  --orange: #f59e0b;
+  --orange-dim: rgba(245,158,11,0.09);
+  --radius: 9px;
+  --radius-lg: 13px;
+  --transition: .18s cubic-bezier(.4,0,.2,1);
+  --header-h: 64px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Cabinet Grotesk', sans-serif;
+  background: var(--bg);
+  color: var(--white);
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+h1, h2, h3, h4 { font-family: 'Cormorant Garamond', serif; }
+a { color: var(--accent); text-decoration: none; }
+
+/* Header */
+.header {
+  position: fixed; top:0; left:0; right:0;
+  height: var(--header-h);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 0 24px; z-index: 100;
+  transition: transform .3s ease;
+}
+.header.hidden { transform: translateY(-100%); }
+.header-left { display: flex; align-items: center; gap: 16px; }
+.hamburger {
+  background: none; border: none; cursor: pointer;
+  padding: 8px; display: flex; align-items: center;
+  color: var(--gray2);
+}
+.hamburger:hover { color: var(--white); }
+.logo { display: flex; align-items: center; gap: 8px; }
+.logo img { height: 28px; }
+.logo span { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 700; }
+.header-right { display: flex; align-items: center; gap: 16px; }
+.admin-badge {
+  font-size: 10px; padding: 3px 10px;
+  border-radius: 12px; background: var(--orange-dim);
+  color: var(--orange); font-weight: 700;
+}
+.profile-btn {
+  display: flex; align-items: center; gap: 8px;
+  background: none; border: none; cursor: pointer;
+  color: var(--gray2); padding: 6px 10px;
+  border-radius: var(--radius);
+  transition: background var(--transition);
+}
+.profile-btn:hover { background: var(--surface2); color: var(--white); }
+.profile-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px;
+  color: var(--accent);
+}
+.profile-dropdown {
+  position: absolute; top:60px; right:20px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  padding: 8px; min-width: 200px;
+  display: none; z-index: 200;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+.profile-dropdown.show { display: block; }
+.profile-dropdown a, .profile-dropdown button {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 10px 14px;
+  border-radius: var(--radius);
+  color: var(--gray2); font-size: 14px;
+  background: none; border: none; cursor: pointer;
+  font-family: 'Cabinet Grotesk', sans-serif;
+  text-align: left;
+  transition: all var(--transition);
+}
+.profile-dropdown a:hover, .profile-dropdown button:hover {
+  background: var(--surface2); color: var(--white);
+}
+.profile-dropdown .divider { height: 1px; background: var(--border); margin: 6px 0; }
+
+/* Sidebar */
+.sidebar-overlay {
+  position: fixed; inset:0;
+  background: rgba(0,0,0,0.5);
+  z-index: 150; display: none;
+}
+.sidebar-overlay.show { display: block; }
+.sidebar {
+  position: fixed; top:0; left:-280px;
+  width: 260px; height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  z-index: 160;
+  transition: left .25s ease;
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+}
+.sidebar.open { left: 0; }
+.sidebar-header {
+  padding: 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+}
+.sidebar-user {
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+}
+.sidebar-user .name { font-weight: 600; font-size: 15px; }
+.sidebar-user .email { font-size: 12px; color: var(--gray); }
+.sidebar-nav { flex:1; padding: 12px; }
+.sidebar-nav button {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; padding: 10px 14px; border-radius: var(--radius);
+  color: var(--gray2); font-size: 14px; font-weight: 500;
+  background: none; border: none; cursor: pointer;
+  font-family: 'Cabinet Grotesk', sans-serif;
+  transition: all var(--transition); margin-bottom: 2px;
+  text-align: left;
+}
+.sidebar-nav button:hover, .sidebar-nav button.active {
+  background: var(--accent-dim); color: var(--accent);
+}
+.sidebar-nav button svg { width: 20px; height: 20px; flex-shrink: 0; }
+.sidebar-footer { padding: 12px 20px; border-top: 1px solid var(--border); }
+
+/* Main */
+.main-content {
+  margin-left: 0;
+  margin-top: var(--header-h);
+  padding: 32px 24px;
+  flex: 1;
+}
+.view { display: none; }
+.view.active { display: block; }
+.page-title { font-size: 28px; margin-bottom: 24px; }
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+.stat-card .label {
+  font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.5px; color: var(--gray);
+  margin-bottom: 4px;
+}
+.stat-card .value {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px; font-weight: 700;
+  color: var(--accent);
+}
+
+/* Section */
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.section-header {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap; gap: 12px;
+}
+.section-header h3 { font-size: 18px; }
+
+/* Toolbar */
+.toolbar {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap; gap: 12px;
+  margin-bottom: 16px;
+}
+.toolbar-left { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.toolbar-right { display: flex; gap: 10px; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 18px; border-radius: var(--radius);
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-weight: 600; font-size: 13px;
+  border: none; cursor: pointer;
+  transition: all var(--transition);
+}
+.btn-primary { background: var(--accent); color: #05080f; }
+.btn-primary:hover { background: var(--accent2); }
+.btn-outline {
+  background: transparent; border: 1px solid var(--border2);
+  color: var(--white);
+}
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+.btn-danger { background: var(--red); color: #fff; }
+.btn-danger:hover { opacity: 0.85; }
+.btn-warning { background: var(--orange); color: #000; }
+.btn-warning:hover { opacity: 0.85; }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-xs { padding: 4px 10px; font-size: 11px; }
+
+/* Inputs */
+input, select, textarea {
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--white);
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color var(--transition);
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+textarea { resize: vertical; min-height: 60px; }
+
+/* Table */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th {
+  text-align: left; padding: 10px 12px;
+  font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.5px; color: var(--gray);
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+}
+td {
+  padding: 10px 12px; font-size: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.badge {
+  display: inline-block; padding: 3px 10px;
+  border-radius: 20px; font-size: 11px; font-weight: 600;
+}
+.badge-approved { background: var(--green-dim); color: var(--green); }
+.badge-pending { background: var(--orange-dim); color: var(--orange); }
+.badge-blocked { background: var(--red-dim); color: var(--red); }
+.badge-admin { background: var(--accent-dim); color: var(--accent); }
+.action-btns { display: flex; gap: 4px; flex-wrap: wrap; }
+
+/* Modal */
+.modal-overlay {
+  position: fixed; inset:0;
+  background: rgba(0,0,0,0.7);
+  z-index: 250; display: none;
+  align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  width: 100%; max-width: 560px;
+  max-height: 90vh; overflow-y: auto;
+}
+.modal h3 { font-size: 20px; margin-bottom: 20px; }
+.modal .form-group { margin-bottom: 16px; }
+.modal .form-group label {
+  display: block; font-size: 13px; font-weight: 600;
+  color: var(--gray2); margin-bottom: 6px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.modal .form-group input,
+.modal .form-group select,
+.modal .form-group textarea { width: 100%; }
+.modal .form-row { display: flex; gap: 12px; }
+.modal .form-row .form-group { flex: 1; }
+.modal-actions {
+  display: flex; gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+.checkbox-group {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 8px;
+}
+.checkbox-group input[type="checkbox"] {
+  width: 18px; height: 18px;
+  accent-color: var(--accent);
+}
+.alert-msg {
+  padding: 10px 14px; border-radius: var(--radius);
+  font-size: 13px; margin-bottom: 16px; display: none;
+}
+.alert-msg.error { background: var(--red-dim); color: var(--red); border: 1px solid rgba(240,86,106,0.3); display: block; }
+.alert-msg.success { background: var(--green-dim); color: var(--green); border: 1px solid rgba(16,212,142,0.3); display: block; }
+
+/* Skeleton */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface2) 25%, var(--surface3) 50%, var(--surface2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius);
+}
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.skeleton-text { height: 14px; margin-bottom: 8px; width: 80%; }
+.skeleton-text.short { width: 50%; }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  padding: 12px 20px; border-radius: var(--radius);
+  font-size: 14px; font-weight: 500; z-index: 400;
+  opacity: 0; transform: translateY(10px);
+  transition: all .3s ease; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast-success { background: var(--green); color: #000; }
+.toast-error { background: var(--red); color: #fff; }
+
+/* Pagination */
+.pagination {
+  display: flex; justify-content: center; gap: 8px;
+  margin-top: 20px;
+}
+
+/* Footer */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 40px 24px; margin-top: auto;
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px; max-width: 1000px; margin: 0 auto;
+}
+.footer-col h4 {
+  font-size: 14px; margin-bottom: 12px;
+  color: var(--gray2); font-family: 'Cabinet Grotesk', sans-serif;
+  font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.footer-col a {
+  display: block; color: var(--gray);
+  font-size: 13px; margin-bottom: 6px;
+  transition: color var(--transition);
+}
+.footer-col a:hover { color: var(--white); }
+.footer-bottom {
+  text-align: center; padding-top: 24px;
+  margin-top: 24px; border-top: 1px solid var(--border);
+  color: var(--gray); font-size: 12px;
+  max-width: 1000px; margin-left: auto; margin-right: auto;
+}
+
+@media (max-width: 860px) {
+  .footer-grid { grid-template-columns: repeat(2, 1fr); }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .footer-grid { grid-template-columns: 1fr; }
+  .main-content { padding: 20px 16px; }
+  .stats-grid { grid-template-columns: 1fr; }
+  .toolbar { flex-direction: column; align-items: stretch; }
+}
+</style>
+</head>
+<body>
+
+<!-- Master Key Gate -->
+<div id="masterGate" style="position:fixed;inset:0;background:var(--bg);z-index:500;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;padding:20px;">
+  <img src="/images/timbr.png" height="48" alt="Timbr">
+  <h2 style="font-family:'Cormorant Garamond',serif;">Admin Access</h2>
+  <p style="color:var(--gray);text-align:center;">Enter your master key to access the admin panel.<br>This key is saved to your session for security.</p>
+  <div style="display:flex;gap:10px;max-width:400px;width:100%;">
+    <input type="password" id="masterKeyInput" placeholder="Enter master key" style="flex:1;padding:12px 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--white);font-size:15px;outline:none;">
+    <button class="btn btn-primary" onclick="verifyMasterKey()">Unlock</button>
+  </div>
+  <p id="masterError" style="color:var(--red);font-size:13px;display:none;"></p>
+  <button class="btn btn-outline btn-sm" onclick="logout()">Back to Login</button>
+</div>
+
+<!-- Header -->
+<header class="header" id="header">
+  <div class="header-left">
+    <button class="hamburger" id="hamburgerBtn" aria-label="Menu">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <a href="/dashboard.html" class="logo">
+      <img src="/images/timbr.png" height="28" alt="Timbr">
+      <span>Timbr</span>
+    </a>
+    <span class="admin-badge">ADMIN</span>
+  </div>
+  <div class="header-right">
+    <div style="position:relative;">
+      <button class="profile-btn" id="profileBtn">
+        <div class="profile-avatar" id="profileAvatar">A</div>
+        <span id="profileName">Admin</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="profile-dropdown" id="profileDropdown">
+        <a href="/profile.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile</a>
+        <a href="/dashboard.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/></svg>Student View</a>
+        <div class="divider"></div>
+        <button onclick="changeMasterKey()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Change Master Key</button>
+        <button onclick="logout()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign Out</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Sidebar Overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <img src="/images/timbr.png" height="24" alt="Timbr">
+    <span style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;">Admin</span>
+  </div>
+  <div class="sidebar-user">
+    <div class="name" id="sidebarName">Admin</div>
+    <div class="email" id="sidebarEmail">admin@timbr.com</div>
+  </div>
+  <nav class="sidebar-nav">
+    <button data-view="dashboard" class="active" onclick="showView('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </button>
+    <button data-view="users" onclick="showView('users')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Users
+    </button>
+    <button data-view="notifications" onclick="showView('notifications')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      Notifications
+    </button>
+    <button data-view="audit" onclick="showView('audit')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Audit Log
+    </button>
+    <button data-view="settings" onclick="showView('settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <button onclick="logout()" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--gray2);cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:500;">Sign Out</button>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<main class="main-content" id="mainContent">
+  
+  <!-- Dashboard View -->
+  <div class="view active" id="view-dashboard">
+    <h1 class="page-title">Admin Dashboard</h1>
+    <div class="stats-grid" id="dashStats">
+      <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
+      <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
+      <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
+      <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
+    </div>
+    <div class="section">
+      <div class="section-header"><h3>Top Students</h3></div>
+      <div id="dashTopUsers"><div class="skeleton skeleton-text"></div></div>
+    </div>
+  </div>
+
+  <!-- Users View -->
+  <div class="view" id="view-users">
+    <h1 class="page-title">User Management</h1>
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <input type="text" id="userSearch" placeholder="Search by username, email, or name..." style="width:260px;" oninput="loadUsers()">
+        <select id="userRoleFilter" onchange="loadUsers()"><option value="">All Roles</option><option value="student">Student</option><option value="admin">Admin</option></select>
+        <select id="userStatusFilter" onchange="loadUsers()"><option value="">All Status</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="blocked">Blocked</option></select>
+      </div>
+      <div class="toolbar-right">
+        <button class="btn btn-primary" onclick="openCreateUserModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Create User
+        </button>
+      </div>
+    </div>
+    <div class="table-wrap" id="usersTable">
+      <div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text"></div>
+    </div>
+    <div class="pagination" id="usersPagination"></div>
+  </div>
+
+  <!-- Notifications View -->
+  <div class="view" id="view-notifications">
+    <h1 class="page-title">Notification Management</h1>
+    <div class="toolbar">
+      <div class="toolbar-right">
+        <button class="btn btn-primary" onclick="openNotifModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Create Notification
+        </button>
+      </div>
+    </div>
+    <div id="notificationsList">
+      <div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text"></div>
+    </div>
+  </div>
+
+  <!-- Audit Log View -->
+  <div class="view" id="view-audit">
+    <h1 class="page-title">Audit Log</h1>
+    <div class="table-wrap" id="auditTable">
+      <div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text"></div>
+    </div>
+  </div>
+
+  <!-- Settings View -->
+  <div class="view" id="view-settings">
+    <h1 class="page-title">Site Settings</h1>
+    <div class="section">
+      <h3>General Settings</h3>
+      <div class="alert-msg" id="settingsAlert"></div>
+      <div class="form-group"><label>Site Name</label><input type="text" id="siteName" placeholder="Timbr"></div>
+      <div class="form-group"><label>Announcement Banner</label><input type="text" id="announcement" placeholder="Optional announcement..."></div>
+      <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+    </div>
+    <div class="section">
+      <h3>Master Key</h3>
+      <p style="color:var(--gray);font-size:13px;margin-bottom:12px;">Change the master key required to access this admin panel.</p>
+      <div class="form-group"><label>New Master Key</label><input type="text" id="newMasterKey" placeholder="Enter new master key"></div>
+      <button class="btn btn-outline" onclick="updateMasterKey()">Update Master Key</button>
+    </div>
+  </div>
+
+</main>
+
+<!-- Generic Modal -->
+<div class="modal-overlay" id="gModal">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-col"><h4>Timbr Admin</h4><p style="color:var(--gray);font-size:13px;">Manage your study tracking platform.</p></div>
+    <div class="footer-col"><h4>Quick Links</h4><a href="/dashboard.html">Student View</a><a href="#" onclick="showView('users')">Users</a><a href="#" onclick="showView('notifications')">Notifications</a></div>
+    <div class="footer-col"><h4>Support</h4><a href="mailto:text.me.md.alamin@gmail.com">Contact Super Admin</a></div>
+    <div class="footer-col"><h4>Legal</h4><a href="#">Privacy Policy</a><a href="#">Terms of Service</a></div>
+  </div>
+  <div class="footer-bottom">&copy; 2024 Timbr. All rights reserved.</div>
+</footer>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// Auth & Master Key
+// ============================================================
+const token = localStorage.getItem('timbr_token');
+const user = JSON.parse(localStorage.getItem('timbr_user') || 'null');
+if (!token || !user || user.role !== 'admin') { window.location.href = '/login.html'; }
+
+const API_BASE = '/api';
+let masterToken = sessionStorage.getItem('timbr_master_token');
+let usersPage = 1;
+let currentView = 'dashboard';
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = String(s || '');
+  return d.innerHTML;
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast toast-${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+async function api(method, path, body) {
+  try {
+    const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }};
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(API_BASE + path, opts);
+    const data = await res.json();
+    return { ok: res.ok, data, status: res.status };
+  } catch(e) {
+    return { ok: false, data: { error: 'Network error. Please try again.' }, status: 0 };
+  }
+}
+
+function logout() {
+  localStorage.removeItem('timbr_token');
+  localStorage.removeItem('timbr_user');
+  sessionStorage.removeItem('timbr_master_token');
+  window.location.href = '/login.html';
+}
+
+// Master Key Verification
+async function verifyMasterKey() {
+  const key = document.getElementById('masterKeyInput').value;
+  const errorEl = document.getElementById('masterError');
+  
+  if (!key) { errorEl.textContent = 'Please enter the master key'; errorEl.style.display = 'block'; return; }
+  
+  const res = await api('POST', '/auth/verify-master-key', { key });
+  
+  if (!res.ok) {
+    errorEl.textContent = res.data.error || 'Invalid master key';
+    errorEl.style.display = 'block';
+    return;
+  }
+  
+  masterToken = res.data.token;
+  sessionStorage.setItem('timbr_master_token', masterToken);
+  document.getElementById('masterGate').style.display = 'none';
+  initAdmin();
+}
+
+async function changeMasterKey() {
+  const newKey = prompt('Enter new master key:');
+  if (!newKey) return;
+  
+  const res = await api('PUT', '/auth/change-master-key', { master_token: masterToken, new_key: newKey });
+  if (!res.ok) { showToast(res.data.error || 'Failed', 'error'); return; }
+  
+  masterToken = null;
+  sessionStorage.removeItem('timbr_master_token');
+  document.getElementById('masterGate').style.display = 'flex';
+  showToast('Master key changed. Please re-enter.');
+}
+
+// Check if master key already verified
+if (masterToken) {
+  document.getElementById('masterGate').style.display = 'none';
+} else {
+  document.getElementById('masterGate').style.display = 'flex';
+}
+
+// UI Setup
+document.getElementById('profileName').textContent = user.name || 'Admin';
+document.getElementById('sidebarName').textContent = user.name || 'Admin';
+document.getElementById('sidebarEmail').textContent = user.email || '';
+document.getElementById('profileAvatar').textContent = (user.name || 'A').charAt(0).toUpperCase();
+
+// Header scroll
+let lastScroll = 0;
+window.addEventListener('scroll', () => {
+  const current = window.pageYOffset;
+  document.getElementById('header').classList.toggle('hidden', current > lastScroll && current > 70);
+  lastScroll = current;
+});
+
+// Sidebar
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('sidebarOverlay');
+document.getElementById('hamburgerBtn').addEventListener('click', () => {
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('show');
+});
+overlay.addEventListener('click', () => { sidebar.classList.remove('open'); overlay.classList.remove('show'); });
+
+// Profile dropdown
+document.getElementById('profileBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  document.getElementById('profileDropdown').classList.toggle('show');
+});
+document.addEventListener('click', () => document.getElementById('profileDropdown').classList.remove('show'));
+
+// ============================================================
+// View Switching
+// ============================================================
+function showView(viewName) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + viewName).classList.add('active');
+  
+  document.querySelectorAll('.sidebar-nav button').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-view="${viewName}"]`).classList.add('active');
+  
+  currentView = viewName;
+  
+  if (viewName === 'dashboard') loadDashboard();
+  if (viewName === 'users') loadUsers();
+  if (viewName === 'notifications') loadAdminNotifications();
+  if (viewName === 'audit') loadAuditLogs();
+  if (viewName === 'settings') loadSettings();
+  
+  sidebar.classList.remove('open');
+  overlay.classList.remove('show');
+}
+
+// ============================================================
+// Modal
+// ============================================================
+function openModal(title, bodyHtml, footerHtml) {
+  document.getElementById('modalContent').innerHTML = `
+    <h3>${title}</h3>
+    <div class="alert-msg" id="_alert"></div>
+    ${bodyHtml}
+    <div class="modal-actions">${footerHtml}</div>
+  `;
+  document.getElementById('gModal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('gModal').classList.remove('show');
+}
+
+function showAlert(msg, type='error') {
+  const el = document.getElementById('_alert');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = `alert-msg ${type}`;
+}
+
+document.getElementById('gModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ============================================================
+// Dashboard
+// ============================================================
+async function loadDashboard() {
+  const res = await api('GET', '/admin/dashboard');
+  if (!res.ok) { showToast('Failed to load dashboard', 'error'); return; }
+  
+  const d = res.data;
+  document.getElementById('dashStats').innerHTML = `
+    <div class="stat-card"><div class="label">Total Users</div><div class="value">${d.total_users}</div></div>
+    <div class="stat-card"><div class="label">Pending Approval</div><div class="value" style="color:var(--orange);">${d.pending_users}</div></div>
+    <div class="stat-card"><div class="label">Blocked</div><div class="value" style="color:var(--red);">${d.blocked_users}</div></div>
+    <div class="stat-card"><div class="label">Total Sessions</div><div class="value">${d.total_sessions}</div></div>
+    <div class="stat-card"><div class="label">Total Hours</div><div class="value">${d.total_hours}<span style="font-size:14px;color:var(--gray);"> hrs</span></div></div>
+  `;
+  
+  const topUsers = d.top_users || [];
+  document.getElementById('dashTopUsers').innerHTML = topUsers.length ? `
+    <div class="table-wrap"><table>
+      <thead><tr><th>Rank</th><th>Name</th><th>Username</th><th>Hours</th></tr></thead>
+      <tbody>${topUsers.map((u, i) => `<tr><td>#${i+1}</td><td>${esc(u.name)}</td><td>@${esc(u.username)}</td><td>${u.total_hours}</td></tr>`).join('')}</tbody>
+    </table></div>` : '<p style="color:var(--gray);">No study data yet.</p>';
+}
+
+// ============================================================
+// Users
+// ============================================================
+async function loadUsers(page = 1) {
+  usersPage = page;
+  const table = document.getElementById('usersTable');
+  table.innerHTML = '<div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text"></div>';
+  
+  const search = document.getElementById('userSearch').value;
+  const role = document.getElementById('userRoleFilter').value;
+  const status = document.getElementById('userStatusFilter').value;
+  
+  const body = { page, limit: 15 };
+  if (search) body.search = search;
+  if (role) body.role = role;
+  if (status) body.status = status;
+  
+  const res = await api('GET', '/admin/users', body);
+  if (!res.ok) { showToast('Failed to load users', 'error'); return; }
+  
+  const users = res.data.users || [];
+  const total = res.data.total || 0;
+  
+  table.innerHTML = users.length ? `
+    <table>
+      <thead><tr><th>ID</th><th>Username</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+      <tbody>${users.map(u => `
+        <tr>
+          <td>${u.id}</td>
+          <td>@${esc(u.username)}</td>
+          <td>${esc(u.name)}</td>
+          <td>${esc(u.email)}</td>
+          <td><span class="badge badge-${u.role === 'admin' ? 'admin' : 'approved'}">${u.role}</span></td>
+          <td>${u.blocked ? '<span class="badge badge-blocked">Blocked</span>' : u.approved ? '<span class="badge badge-approved">Approved</span>' : '<span class="badge badge-pending">Pending</span>'}</td>
+          <td style="font-size:12px;">${new Date(u.created_at).toLocaleDateString()}</td>
+          <td>
+            <div class="action-btns">
+              ${!u.approved && !u.blocked ? `<button class="btn btn-outline btn-xs" onclick="approveUser(${u.id})">Approve</button>` : ''}
+              ${!u.blocked ? `<button class="btn btn-warning btn-xs" onclick="blockUser(${u.id})">Block</button>` : `<button class="btn btn-outline btn-xs" onclick="unblockUser(${u.id})">Unblock</button>`}
+              <button class="btn btn-danger btn-xs" onclick="resetUserData(${u.id})">Reset</button>
+              <button class="btn btn-danger btn-xs" onclick="deleteUser(${u.id})">Delete</button>
+            </div>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>` : '<p style="text-align:center;padding:20px;color:var(--gray);">No users found.</p>';
+  
+  // Pagination
+  const totalPages = Math.ceil(total / 15);
+  let pagHTML = '';
+  if (totalPages > 1) {
+    pagHTML += `<button class="btn btn-outline btn-sm" onclick="loadUsers(${usersPage - 1})" ${usersPage === 1 ? 'disabled' : ''}>Prev</button>`;
+    for (let i = 1; i <= totalPages; i++) {
+      pagHTML += `<button class="btn ${i === usersPage ? 'btn-primary' : 'btn-outline'} btn-sm" onclick="loadUsers(${i})">${i}</button>`;
+    }
+    pagHTML += `<button class="btn btn-outline btn-sm" onclick="loadUsers(${usersPage + 1})" ${usersPage === totalPages ? 'disabled' : ''}>Next</button>`;
+  }
+  document.getElementById('usersPagination').innerHTML = pagHTML;
+}
+
+function openCreateUserModal() {
+  openModal('Create User', `
+    <div class="form-group"><label>Username</label><input type="text" id="cuUsername" required></div>
+    <div class="form-group"><label>Full Name</label><input type="text" id="cuName" required></div>
+    <div class="form-group"><label>Email</label><input type="email" id="cuEmail" required></div>
+    <div class="form-group"><label>Password</label><input type="password" id="cuPassword" required></div>
+    <div class="form-group"><label>Role</label><select id="cuRole"><option value="student">Student</option><option value="admin">Admin</option></select></div>
+  `, `
+    <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="createUser()">Create</button>
+  `);
+}
+
+async function createUser() {
+  const username = document.getElementById('cuUsername').value.trim();
+  const name = document.getElementById('cuName').value.trim();
+  const email = document.getElementById('cuEmail').value.trim();
+  const password = document.getElementById('cuPassword').value;
+  const role = document.getElementById('cuRole').value;
+  
+  if (!username || !name || !email || !password) { showAlert('All fields required'); return; }
+  
+  const res = await api('POST', '/admin/users', { username, name, email, password, role });
+  if (!res.ok) { showAlert(res.data.error); return; }
+  
+  closeModal();
+  showToast('User created');
+  loadUsers();
+}
+
+async function approveUser(id) {
+  const res = await api('PUT', `/admin/users/${id}/approve`);
+  if (res.ok) { showToast('User approved'); loadUsers(); }
+  else showToast(res.data.error || 'Failed', 'error');
+}
+
+async function blockUser(id) {
+  if (!confirm('Block this user?')) return;
+  const res = await api('PUT', `/admin/users/${id}/block`);
+  if (res.ok) { showToast('User blocked'); loadUsers(); }
+  else showToast(res.data.error || 'Failed', 'error');
+}
+
+async function unblockUser(id) {
+  const res = await api('PUT', `/admin/users/${id}/unblock`);
+  if (res.ok) { showToast('User unblocked'); loadUsers(); }
+  else showToast(res.data.error || 'Failed', 'error');
+}
+
+async function resetUserData(id) {
+  if (!confirm('Reset all study data for this user? This cannot be undone.')) return;
+  const res = await api('PUT', `/admin/users/${id}/reset`);
+  if (res.ok) { showToast('Study data reset'); }
+  else showToast(res.data.error || 'Failed', 'error');
+}
+
+async function deleteUser(id) {
+  if (!confirm('PERMANENTLY delete this user and ALL their data? This cannot be undone.')) return;
+  const res = await api('DELETE', `/admin/users/${id}`);
+  if (res.ok) { showToast('User deleted'); loadUsers(); }
+  else showToast(res.data.error || 'Failed', 'error');
+}
+
+// ============================================================
+// Notifications Management
+// ============================================================
+async function loadAdminNotifications() {
+  const list = document.getElementById('notificationsList');
+  list.innerHTML = '<div class="skeleton skeleton-text"></div>';
+  
+  const res = await api('GET', '/notifications');
+  if (!res.ok) { showToast('Failed to load', 'error'); return; }
+  
+  const notifs = res.data || [];
+  list.innerHTML = notifs.length ? `
+    <div class="table-wrap"><table>
+      <thead><tr><th>Title</th><th>Type</th><th>Audience</th><th>Pinned</th><th>Active</th><th>Created</th><th>Actions</th></tr></thead>
+      <tbody>${notifs.map(n => `
+        <tr>
+          <td>${esc(n.title)}</td>
+          <td><span class="badge type-${esc(n.type)}" style="background:var(--${n.type === 'Important' ? 'red' : n.type === 'Warning' ? 'orange' : n.type === 'Success' ? 'green' : 'accent'}-dim);color:var(--${n.type === 'Important' ? 'red' : n.type === 'Warning' ? 'orange' : n.type === 'Success' ? 'green' : 'accent'});">${n.type}</span></td>
+          <td>${esc(n.audience)}</td>
+          <td>${n.pinned ? 'Yes' : 'No'}</td>
+          <td>${n.active ? 'Yes' : 'No'}</td>
+          <td style="font-size:12px;">${new Date(n.created_at).toLocaleDateString()}</td>
+          <td>
+            <div class="action-btns">
+              <button class="btn btn-outline btn-xs" onclick="editNotif(${n.id})">Edit</button>
+              <button class="btn btn-danger btn-xs" onclick="deleteNotif(${n.id})">Delete</button>
+            </div>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>` : '<p style="text-align:center;padding:20px;color:var(--gray);">No notifications.</p>';
+}
+
+function openNotifModal(editData = null) {
+  const isEdit = !!editData;
+  openModal(isEdit ? 'Edit Notification' : 'Create Notification', `
+    <input type="hidden" id="notifId" value="${editData?.id || ''}">
+    <div class="form-group"><label>Title</label><input type="text" id="nTitle" value="${esc(editData?.title || '')}" required></div>
+    <div class="form-group"><label>Message</label><textarea id="nMessage">${esc(editData?.message || '')}</textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label>Type</label><select id="nType">${['Info','Success','Warning','Important'].map(t => `<option value="${t}" ${editData?.type === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+      <div class="form-group"><label>Audience</label><select id="nAudience">${['Everyone','Students','Admins','Approved users','Blocked users'].map(a => `<option value="${a}" ${editData?.audience === a ? 'selected' : ''}>${a}</option>`).join('')}</select></div>
+    </div>
+    <div class="form-group"><label>Image URL</label><input type="url" id="nImageUrl" value="${esc(editData?.image_url || '')}" placeholder="https://..."></div>
+    <div class="form-row">
+      <div class="form-group"><label>Button Text</label><input type="text" id="nButtonText" value="${esc(editData?.button_text || '')}"></div>
+      <div class="form-group"><label>Button URL</label><input type="url" id="nButtonUrl" value="${esc(editData?.button_url || '')}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Start Date</label><input type="datetime-local" id="nStartDate" value="${editData?.start_date ? editData.start_date.slice(0,16) : ''}"></div>
+      <div class="form-group"><label>End Date</label><input type="datetime-local" id="nEndDate" value="${editData?.end_date ? editData.end_date.slice(0,16) : ''}"></div>
+    </div>
+    <div style="display:flex;gap:20px;">
+      <div class="checkbox-group"><input type="checkbox" id="nPinned" ${editData?.pinned ? 'checked' : ''}><label for="nPinned" style="font-size:13px;">Pinned</label></div>
+      <div class="checkbox-group"><input type="checkbox" id="nActive" ${editData ? (editData.active ? 'checked' : '') : 'checked'}><label for="nActive" style="font-size:13px;">Active</label></div>
+      <div class="checkbox-group"><input type="checkbox" id="nPopup" ${editData?.popup ? 'checked' : ''}><label for="nPopup" style="font-size:13px;">Popup</label></div>
+      <div class="checkbox-group"><input type="checkbox" id="nBanner" ${editData?.banner ? 'checked' : ''}><label for="nBanner" style="font-size:13px;">Banner</label></div>
+    </div>
+  `, `
+    <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveNotif()">${isEdit ? 'Update' : 'Create'}</button>
+  `);
+}
+
+async function editNotif(id) {
+  const res = await api('GET', '/notifications');
+  if (!res.ok) return;
+  const notif = (res.data || []).find(n => n.id === id);
+  if (notif) openNotifModal(notif);
+}
+
+async function saveNotif() {
+  const id = document.getElementById('notifId').value;
+  const body = {
+    title: document.getElementById('nTitle').value.trim(),
+    message: document.getElementById('nMessage').value.trim(),
+    type: document.getElementById('nType').value,
+    audience: document.getElementById('nAudience').value,
+    image_url: document.getElementById('nImageUrl').value || null,
+    button_text: document.getElementById('nButtonText').value || null,
+    button_url: document.getElementById('nButtonUrl').value || null,
+    start_date: document.getElementById('nStartDate').value || null,
+    end_date: document.getElementById('nEndDate').value || null,
+    pinned: document.getElementById('nPinned').checked ? 1 : 0,
+    active: document.getElementById('nActive').checked ? 1 : 0,
+    popup: document.getElementById('nPopup').checked ? 1 : 0,
+    banner: document.getElementById('nBanner').checked ? 1 : 0
+  };
+  
+  if (!body.title) { showAlert('Title is required'); return; }
+  
+  const method = id ? 'PUT' : 'POST';
+  const path = id ? `/admin/notifications/${id}` : '/admin/notifications';
+  const res = await api(method, path, body);
+  
+  if (!res.ok) { showAlert(res.data.error); return; }
+  
+  closeModal();
+  showToast(id ? 'Notification updated' : 'Notification created');
+  loadAdminNotifications();
+}
+
+async function deleteNotif(id) {
+  if (!confirm('Delete this notification?')) return;
+  const res = await api('DELETE', `/admin/notifications/${id}/delete`);
+  if (res.ok) { showToast('Notification deleted'); loadAdminNotifications(); }
+  else showToast('Failed', 'error');
+}
+
+// ============================================================
+// Audit Logs
+// ============================================================
+async function loadAuditLogs() {
+  const table = document.getElementById('auditTable');
+  table.innerHTML = '<div class="skeleton skeleton-text"></div>';
+  
+  const res = await api('GET', '/admin/audit-logs');
+  if (!res.ok) { showToast('Failed to load', 'error'); return; }
+  
+  const logs = res.data || [];
+  table.innerHTML = logs.length ? `
+    <table>
+      <thead><tr><th>Date</th><th>Action</th><th>Details</th><th>Performed By</th></tr></thead>
+      <tbody>${logs.map(l => `
+        <tr>
+          <td style="font-size:12px;">${new Date(l.created_at).toLocaleString()}</td>
+          <td>${esc(l.action)}</td>
+          <td style="font-size:12px;">${esc(l.details || '')}</td>
+          <td>${esc(l.performer_name || 'System')}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>` : '<p style="text-align:center;padding:20px;color:var(--gray);">No audit logs yet.</p>';
+}
+
+// ============================================================
+// Settings
+// ============================================================
+async function loadSettings() {
+  const res = await api('GET', '/admin/settings');
+  if (res.ok) {
+    const settings = res.data || [];
+    const siteName = settings.find(s => s.key === 'site_name');
+    const announcement = settings.find(s => s.key === 'announcement');
+    if (siteName) document.getElementById('siteName').value = siteName.value;
+    if (announcement) document.getElementById('announcement').value = announcement.value;
+  }
+}
+
+async function saveSettings() {
+  const siteName = document.getElementById('siteName').value.trim();
+  const announcement = document.getElementById('announcement').value.trim();
+  const alertEl = document.getElementById('settingsAlert');
+  
+  const res = await api('PUT', '/admin/settings', { site_name: siteName, announcement });
+  if (!res.ok) {
+    alertEl.textContent = res.data.error || 'Failed';
+    alertEl.className = 'alert-msg error';
+    return;
+  }
+  alertEl.textContent = 'Settings saved';
+  alertEl.className = 'alert-msg success';
+  showToast('Settings saved');
+  setTimeout(() => { alertEl.className = 'alert-msg'; }, 3000);
+}
+
+async function updateMasterKey() {
+  const newKey = document.getElementById('newMasterKey').value.trim();
+  if (!newKey) { showToast('Enter a new master key', 'error'); return; }
+  
+  const res = await api('PUT', '/auth/change-master-key', { master_token: masterToken, new_key: newKey });
+  if (!res.ok) { showToast(res.data.error || 'Failed', 'error'); return; }
+  
+  showToast('Master key updated');
+  document.getElementById('newMasterKey').value = '';
+  masterToken = null;
+  sessionStorage.removeItem('timbr_master_token');
+  setTimeout(() => { document.getElementById('masterGate').style.display = 'flex'; }, 1500);
+}
+
+// ============================================================
+// Init
+// ============================================================
+function initAdmin() {
+  loadDashboard();
+}
+
+if (masterToken) {
+  initAdmin();
+}
+
+// Enter key on Enter
+document.getElementById('masterKeyInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') verifyMasterKey();
+});
+</script>
+</body>
+</html>
