@@ -230,11 +230,10 @@ a { color: var(--accent); text-decoration: none; }
 .chart-wrap {
   position: relative;
   width: 100%;
-  overflow-x: auto;
+  overflow: hidden;
 }
-canvas { 
-  display: block; 
-  max-width: 100%; 
+canvas {
+  display: block;
 }
 
 .table-wrap { overflow-x: auto; }
@@ -427,7 +426,8 @@ if (!token || !user) { window.location.href = '/login.html'; }
 const API_BASE = '/api';
 let currentPeriod = 'daily';
 const COLORS = ['#00d4aa', '#00b894', '#f59e0b', '#f0566a', '#7c3aed', '#3b82f6', '#10d48e', '#ec4899', '#06b6d4', '#f97316'];
-const lastChartCall = {};
+const lastChartCall = {};   // canvas.id -> {type, data, labels} so resize can redraw without refetching
+const lastCanvasSize = {};  // canvas.id -> {w,h} last rendered CSS size
 
 function esc(s) {
   const d = document.createElement('div');
@@ -508,33 +508,60 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 // ============================================================
-// FIXED: Canvas sizing — locks CSS display size to the height attribute
+// Canvas sizing
+// ------------------------------------------------------------
+// THE "BARS KEEP GROWING" BUG: the previous version measured the
+// canvas's OWN getBoundingClientRect() to decide how big to draw it,
+// then wrote that measurement straight back onto the canvas
+// (style.width + backing-store width). That's a feedback loop: each
+// redraw's "current size" was partly determined by the PREVIOUS
+// redraw's output (CSS px -> device px via dpr -> rounded back), so a
+// tiny rounding drift crept in on every single redraw (tab switch,
+// resize, even the 60s notification poll causing a reflow). Over many
+// redraws that drift compounds into visibly runaway growth.
+//
+// FIX: measure the WRAPPER (.chart-wrap) instead of the canvas. The
+// wrapper's width comes purely from page layout (flex/grid/viewport)
+// and has zero dependency on what the canvas last rendered — no loop
+// possible. A second guard (lastCanvasSize) skips redraws entirely
+// when the size hasn't meaningfully changed.
 // ============================================================
 function clearCanvas(canvas) {
   const ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  const wrapper = canvas.parentElement; // .chart-wrap
+  const cssWidth = Math.round(wrapper.clientWidth);
   const cssHeight = parseInt(canvas.getAttribute('height'), 10) || 300;
-  const cssWidth = rect.width;
 
-  // Lock the CSS display size
+  // Lock CSS display size explicitly — never inferred from the canvas's
+  // own backing-store pixel size.
   canvas.style.width = cssWidth + 'px';
   canvas.style.height = cssHeight + 'px';
 
-  // Set the backing store to the display size × devicePixelRatio for sharp rendering
-  canvas.width = Math.floor(cssWidth * dpr);
-  canvas.height = Math.floor(cssHeight * dpr);
+  const targetW = Math.round(cssWidth * dpr);
+  const targetH = Math.round(cssHeight * dpr);
+  if (canvas.width !== targetW) canvas.width = targetW;
+  if (canvas.height !== targetH) canvas.height = targetH;
 
-  // Reset transform and scale
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.setTransform(1, 0, 0, 1, 0, 0); // reset before reapplying, else scale compounds
   ctx.scale(dpr, dpr);
   ctx.clearRect(0, 0, cssWidth, cssHeight);
 
+  lastCanvasSize[canvas.id] = { w: cssWidth, h: cssHeight };
   return { ctx, w: cssWidth, h: cssHeight };
 }
 
 function isVisible(canvas) {
-  return canvas.offsetParent !== null && canvas.getBoundingClientRect().width > 0;
+  return canvas.offsetParent !== null && canvas.parentElement.clientWidth > 0;
+}
+
+// True only if the wrapper's width has actually changed since the last
+// draw — lets the resize handler skip no-op redraws.
+function sizeChanged(canvas) {
+  const wrapper = canvas.parentElement;
+  const prev = lastCanvasSize[canvas.id];
+  if (!prev) return true;
+  return Math.abs(Math.round(wrapper.clientWidth) - prev.w) > 1;
 }
 
 function drawBarChart(canvas, data, labels) {
@@ -548,16 +575,16 @@ function drawBarChart(canvas, data, labels) {
     ctx.fillText('No data', w/2, h/2);
     return;
   }
-  
+
   const pad = { top: 30, right: 20, bottom: 50, left: 55 };
   const cw = w - pad.left - pad.right;
   const ch = h - pad.top - pad.bottom;
   const maxVal = Math.max(...data, 1);
   const barW = Math.min(40, cw / Math.max(data.length, 1) - 10);
-  
+
   ctx.fillStyle = '#0b0f1a';
   ctx.fillRect(0, 0, w, h);
-  
+
   for (let i = 0; i <= 4; i++) {
     const y = pad.top + (ch / 4) * i;
     ctx.strokeStyle = 'rgba(255,255,255,0.05)';
@@ -568,12 +595,12 @@ function drawBarChart(canvas, data, labels) {
     ctx.textAlign = 'right';
     ctx.fillText(Math.round(maxVal - (maxVal / 4) * i), pad.left - 8, y + 4);
   }
-  
+
   data.forEach((val, i) => {
     const barH = Math.max((val / maxVal) * ch, 1);
     const x = pad.left + i * (cw / data.length) + (cw / data.length - barW) / 2;
     const y = pad.top + ch - barH;
-    
+
     ctx.fillStyle = COLORS[i % COLORS.length];
     ctx.beginPath();
     if (ctx.roundRect) {
@@ -582,7 +609,7 @@ function drawBarChart(canvas, data, labels) {
       ctx.fillRect(x, y, barW, barH);
     }
     ctx.fill();
-    
+
     ctx.fillStyle = '#a0adb8';
     ctx.font = '10px "Cabinet Grotesk", sans-serif';
     ctx.textAlign = 'center';
@@ -596,7 +623,7 @@ function drawPieChart(canvas, data, labels) {
   if (!isVisible(canvas)) return;
   const { ctx, w, h } = clearCanvas(canvas);
   const total = data.reduce((a, b) => a + b, 0);
-  
+
   if (total === 0) {
     ctx.fillStyle = '#7a8899';
     ctx.font = '14px "Cabinet Grotesk", sans-serif';
@@ -604,14 +631,14 @@ function drawPieChart(canvas, data, labels) {
     ctx.fillText('No data', w/2, h/2);
     return;
   }
-  
+
   const cx = w / 2, cy = h / 2;
   const radius = Math.min(w, h) / 2 - 50;
   let startAngle = -Math.PI / 2;
-  
+
   ctx.fillStyle = '#0b0f1a';
   ctx.fillRect(0, 0, w, h);
-  
+
   data.forEach((val, i) => {
     const sliceAngle = (val / total) * Math.PI * 2;
     ctx.fillStyle = COLORS[i % COLORS.length];
@@ -620,7 +647,7 @@ function drawPieChart(canvas, data, labels) {
     ctx.arc(cx, cy, radius, startAngle, startAngle + sliceAngle);
     ctx.closePath();
     ctx.fill();
-    
+
     const midAngle = startAngle + sliceAngle / 2;
     const lx = cx + Math.cos(midAngle) * (radius + 35);
     const ly = cy + Math.sin(midAngle) * (radius + 35);
@@ -629,7 +656,7 @@ function drawPieChart(canvas, data, labels) {
     ctx.textAlign = 'center';
     ctx.fillText(labels[i] || '', lx, ly);
     ctx.fillText(Math.round(val) + 'm', lx, ly + 13);
-    
+
     startAngle += sliceAngle;
   });
 }
@@ -638,7 +665,7 @@ function drawLineChart(canvas, data, labels) {
   lastChartCall[canvas.id] = { type: 'line', data, labels };
   if (!isVisible(canvas)) return;
   const { ctx, w, h } = clearCanvas(canvas);
-  
+
   if (data.length === 0) {
     ctx.fillStyle = '#7a8899';
     ctx.font = '14px "Cabinet Grotesk", sans-serif';
@@ -646,15 +673,15 @@ function drawLineChart(canvas, data, labels) {
     ctx.fillText('No data', w/2, h/2);
     return;
   }
-  
+
   const pad = { top: 30, right: 20, bottom: 50, left: 55 };
   const cw = w - pad.left - pad.right;
   const ch = h - pad.top - pad.bottom;
   const maxVal = Math.max(...data, 1);
-  
+
   ctx.fillStyle = '#0b0f1a';
   ctx.fillRect(0, 0, w, h);
-  
+
   for (let i = 0; i <= 4; i++) {
     const y = pad.top + (ch / 4) * i;
     ctx.strokeStyle = 'rgba(255,255,255,0.05)';
@@ -665,7 +692,7 @@ function drawLineChart(canvas, data, labels) {
     ctx.textAlign = 'right';
     ctx.fillText(Math.round(maxVal - (maxVal / 4) * i), pad.left - 8, y + 4);
   }
-  
+
   if (data.length > 1) {
     ctx.strokeStyle = '#00d4aa';
     ctx.lineWidth = 2.5;
@@ -678,7 +705,7 @@ function drawLineChart(canvas, data, labels) {
     });
     ctx.stroke();
   }
-  
+
   data.forEach((val, i) => {
     const x = data.length > 1 ? pad.left + (i / (data.length - 1)) * cw : pad.left + cw / 2;
     const y = pad.top + ch - (val / maxVal) * ch;
@@ -707,14 +734,14 @@ async function loadStats() {
   const subjectChart = document.getElementById('subjectChart');
   const subjectDistSection = document.getElementById('subjectDistSection');
   const detailTable = document.getElementById('detailTable');
-  
+
   document.getElementById('statsGrid').innerHTML = `
     <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
     <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
     <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
     <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>`;
   detailTable.innerHTML = '<div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text"></div>';
-  
+
   try {
     if (currentPeriod === 'subjects') await loadSubjectsTab(mainChart, subjectChart, subjectDistSection, detailTable);
     else if (currentPeriod === 'daily') await loadDailyTab(mainChart, subjectChart, subjectDistSection, detailTable);
@@ -878,14 +905,33 @@ loadStats();
 loadNotifBadge();
 setInterval(loadNotifBadge, 60000);
 
+// ============================================================
+// Resize handling
+// ------------------------------------------------------------
+// Uses ResizeObserver on the chart wrappers (catches sidebar toggles,
+// tab switches, viewport changes — anything that changes layout, not
+// just window resize). Each callback only redraws a canvas if
+// sizeChanged() says its wrapper's width actually moved, so a
+// no-op observer firing (e.g. from the redraw itself) can't cause any
+// further redraw — breaking any possibility of a self-triggering loop.
+// ============================================================
 let resizeTimeout;
-window.addEventListener('resize', () => {
+function scheduleChartRedraw() {
   clearTimeout(resizeTimeout);
   resizeTimeout = setTimeout(() => {
-    redrawFromCache(document.getElementById('mainChart'));
-    redrawFromCache(document.getElementById('subjectChart'));
-  }, 300);
-});
+    const mainChart = document.getElementById('mainChart');
+    const subjectChart = document.getElementById('subjectChart');
+    if (sizeChanged(mainChart)) redrawFromCache(mainChart);
+    if (sizeChanged(subjectChart)) redrawFromCache(subjectChart);
+  }, 200);
+}
+
+if (window.ResizeObserver) {
+  const ro = new ResizeObserver(() => scheduleChartRedraw());
+  document.querySelectorAll('.chart-wrap').forEach(el => ro.observe(el));
+} else {
+  window.addEventListener('resize', scheduleChartRedraw);
+}
 </script>
 </body>
 </html>
