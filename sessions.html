@@ -512,11 +512,29 @@ function showToast(msg, type='success') {
   setTimeout(() => t.classList.remove('show'), 3500);
 }
 
+// FIXED: api() function - GET requests use query string, POST/PUT use JSON body
 async function api(method, path, body) {
   try {
     const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }};
-    if (body) opts.body = JSON.stringify(body);
-    const res = await fetch(API_BASE + path, opts);
+    
+    let url = API_BASE + path;
+    
+    // For GET requests, convert body to query string parameters
+    if (method === 'GET' && body) {
+      const params = new URLSearchParams();
+      for (const [key, value] of Object.entries(body)) {
+        if (value !== undefined && value !== null && value !== '') {
+          params.append(key, String(value));
+        }
+      }
+      const qs = params.toString();
+      if (qs) url += '?' + qs;
+    } else if (body) {
+      // For POST/PUT/DELETE, send as JSON body
+      opts.body = JSON.stringify(body);
+    }
+    
+    const res = await fetch(url, opts);
     const data = await res.json();
     return { ok: res.ok, data, status: res.status };
   } catch(e) {
@@ -532,12 +550,14 @@ function logout() {
 
 function showAlert(msg, type='error') {
   const el = document.getElementById('_alert');
+  if (!el) return;
   el.textContent = msg;
   el.className = `alert-msg ${type}`;
 }
 
 function clearAlert() {
-  document.getElementById('_alert').className = 'alert-msg';
+  const el = document.getElementById('_alert');
+  if (el) el.className = 'alert-msg';
 }
 
 function openModal(title) {
@@ -589,7 +609,7 @@ document.getElementById('gModal').addEventListener('click', function(e) {
 });
 
 // ============================================================
-// Load Sessions
+// Load Sessions (Uses query params for GET)
 // ============================================================
 async function loadSessions(page = 1) {
   currentPage = page;
@@ -600,28 +620,29 @@ async function loadSessions(page = 1) {
   const subject = document.getElementById('filterSubject').value;
   const status = document.getElementById('filterStatus').value;
 
-  const body = { page, limit: pageSize };
-  if (date) body.date = date;
-  if (subject) body.subject = subject;
-  if (status) body.status = status;
+  // Build query params object
+  const queryParams = { page, limit: pageSize };
+  if (date) queryParams.date = date;
+  if (subject) queryParams.subject = subject;
+  if (status) queryParams.status = status;
 
-  const res = await api('GET', '/sessions', body);
+  const res = await api('GET', '/sessions', queryParams);
   
   if (!res.ok) {
-    container.innerHTML = `<div class="empty-state"><h3>Error</h3><p>${esc(res.data.error)}</p><button class="btn btn-outline btn-sm" onclick="loadSessions()">Retry</button></div>`;
+    container.innerHTML = `<div class="empty-state"><h3>Error</h3><p>${esc(res.data.error || 'Failed to load')}</p><button class="btn btn-outline btn-sm" onclick="loadSessions()">Retry</button></div>`;
     return;
   }
 
   const sessions = res.data.sessions || [];
   const total = res.data.total || 0;
 
-  // Update subject filter
+  // Update subject filter dropdown
   const subjects = [...new Set(sessions.map(s => s.subject))];
   const subjectSelect = document.getElementById('filterSubject');
   const currentFilter = subjectSelect.value;
   subjectSelect.innerHTML = '<option value="">All Subjects</option>' + subjects.map(s => `<option value="${esc(s)}" ${s === currentFilter ? 'selected' : ''}>${esc(s)}</option>`).join('');
   
-  // Update datalist
+  // Update datalist for modal
   document.getElementById('subjectList').innerHTML = subjects.map(s => `<option value="${esc(s)}">`).join('');
 
   if (sessions.length === 0) {
@@ -704,9 +725,9 @@ async function openEditModal(id) {
   
   const s = res.data;
   document.getElementById('sessionId').value = s.id;
-  document.getElementById('sTitle').value = s.title;
-  document.getElementById('sSubject').value = s.subject;
-  document.getElementById('sDate').value = s.study_date;
+  document.getElementById('sTitle').value = s.title || '';
+  document.getElementById('sSubject').value = s.subject || '';
+  document.getElementById('sDate').value = s.study_date || '';
   document.getElementById('sPlannedStart').value = s.planned_start || '';
   document.getElementById('sPlannedEnd').value = s.planned_end || '';
   document.getElementById('sActualStart').value = s.actual_start ? s.actual_start.slice(0, 16) : '';
@@ -714,7 +735,7 @@ async function openEditModal(id) {
   document.getElementById('sLostMin').value = s.lost_minutes || 0;
   document.getElementById('sLostReason').value = s.lost_reason || '';
   document.getElementById('sNote').value = s.note || '';
-  document.getElementById('sStatus').value = s.status;
+  document.getElementById('sStatus').value = s.status || 'Planned';
   
   openModal('Edit Session');
 }
