@@ -542,21 +542,31 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 // ============================================================
 // Load Leaderboard
 // ============================================================
-async function loadLeaderboard() {
-  const podium = document.getElementById('podium');
-  const list = document.getElementById('leaderboardList');
-  
-  podium.innerHTML = '<div class="skeleton skeleton-text" style="height:100px;"></div>';
-  list.innerHTML = '<div class="leaderboard-item"><div class="skeleton skeleton-text"></div></div><div class="leaderboard-item"><div class="skeleton skeleton-text"></div></div>';
-
-  const res = await api('GET', '/leaderboard', { period: currentPeriod });
-  
-  if (!res.ok) {
-    showToast('Failed to load leaderboard', 'error');
-    podium.innerHTML = '';
-    list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gray);">Failed to load. <button class="btn btn-outline btn-sm" onclick="loadLeaderboard()">Retry</button></div>';
-    return;
+async function api(method, path, body) {
+  try {
+    const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }};
+    
+    let url = API_BASE + path;
+    if (method === 'GET' && body) {
+      const params = new URLSearchParams();
+      for (const [key, value] of Object.entries(body)) {
+        if (value !== undefined && value !== null && value !== '') {
+          params.append(key, value);
+        }
+      }
+      const qs = params.toString();
+      if (qs) url += '?' + qs;
+    } else if (body) {
+      opts.body = JSON.stringify(body);
+    }
+    
+    const res = await fetch(url, opts);
+    const data = await res.json();
+    return { ok: res.ok, data, status: res.status };
+  } catch(e) {
+    return { ok: false, data: { error: 'Network error. Please try again.' }, status: 0 };
   }
+}
 
   const data = res.data.leaderboard || [];
   
