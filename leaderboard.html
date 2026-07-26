@@ -45,7 +45,6 @@ body {
 h1, h2, h3, h4 { font-family: 'Cormorant Garamond', serif; }
 a { color: var(--accent); text-decoration: none; }
 
-/* Header */
 .header {
   position: fixed; top:0; left:0; right:0;
   height: var(--header-h);
@@ -124,7 +123,6 @@ a { color: var(--accent); text-decoration: none; }
 }
 .profile-dropdown .divider { height: 1px; background: var(--border); margin: 6px 0; }
 
-/* Sidebar */
 .sidebar-overlay {
   position: fixed; inset:0;
   background: rgba(0,0,0,0.5);
@@ -164,7 +162,6 @@ a { color: var(--accent); text-decoration: none; }
 .sidebar-nav a svg { width: 20px; height: 20px; flex-shrink: 0; }
 .sidebar-footer { padding: 12px 20px; border-top: 1px solid var(--border); }
 
-/* Main */
 .main-content {
   margin-left: 0;
   margin-top: var(--header-h);
@@ -178,7 +175,6 @@ a { color: var(--accent); text-decoration: none; }
 .page-title { font-size: 28px; margin-bottom: 8px; }
 .page-subtitle { color: var(--gray); font-size: 14px; margin-bottom: 24px; }
 
-/* Tabs */
 .tabs {
   display: flex; gap: 4px; flex-wrap: wrap;
   margin-bottom: 24px;
@@ -201,12 +197,12 @@ a { color: var(--accent); text-decoration: none; }
   color: #05080f;
 }
 
-/* Podium */
 .podium {
   display: flex; align-items: flex-end;
   justify-content: center; gap: 16px;
   margin-bottom: 32px;
   padding: 20px 0;
+  min-height: 180px;
 }
 .podium-item {
   text-align: center;
@@ -218,9 +214,9 @@ a { color: var(--accent); text-decoration: none; }
   transition: transform var(--transition);
 }
 .podium-item:hover { transform: translateY(-4px); }
-.podium-item.gold { border-color: var(--orange); padding-top: 32px; padding-bottom: 24px; }
+.podium-item.gold { border-color: var(--orange); padding-top: 32px; padding-bottom: 24px; min-width: 140px; }
 .podium-item.silver { border-color: var(--gray2); padding-top: 24px; }
-.podium-item.bronze { border-color: var(--orange); opacity: 0.9; }
+.podium-item.bronze { border-color: #cd7f32; opacity: 0.9; }
 .podium-rank {
   font-family: 'Cormorant Garamond', serif;
   font-size: 40px; font-weight: 700;
@@ -248,7 +244,6 @@ a { color: var(--accent); text-decoration: none; }
   margin-top: 2px;
 }
 
-/* Leaderboard List */
 .leaderboard-list {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -271,7 +266,7 @@ a { color: var(--accent); text-decoration: none; }
   font-family: 'DM Mono', monospace;
   font-size: 16px; font-weight: 700;
   color: var(--gray);
-  width: 32px; text-align: center;
+  width: 36px; text-align: center;
   flex-shrink: 0;
 }
 .rank-num.top { color: var(--accent); }
@@ -295,7 +290,6 @@ a { color: var(--accent); text-decoration: none; }
 }
 .user-sessions { font-size: 11px; color: var(--gray); }
 
-/* Skeleton */
 .skeleton {
   background: linear-gradient(90deg, var(--surface2) 25%, var(--surface3) 50%, var(--surface2) 75%);
   background-size: 200% 100%;
@@ -306,7 +300,13 @@ a { color: var(--accent); text-decoration: none; }
 .skeleton-text { height: 14px; margin-bottom: 8px; width: 80%; }
 .skeleton-text.short { width: 50%; }
 
-/* Toast */
+.empty-state {
+  text-align: center; padding: 40px 20px;
+}
+.empty-state svg { width: 48px; height: 48px; color: var(--gray); margin-bottom: 16px; }
+.empty-state h3 { color: var(--gray2); margin-bottom: 8px; }
+.empty-state p { color: var(--gray); font-size: 14px; }
+
 .toast {
   position: fixed; bottom: 24px; right: 24px;
   padding: 12px 20px; border-radius: var(--radius);
@@ -318,7 +318,6 @@ a { color: var(--accent); text-decoration: none; }
 .toast-success { background: var(--green); color: #000; }
 .toast-error { background: var(--red); color: #fff; }
 
-/* Footer */
 footer {
   border-top: 1px solid var(--border);
   padding: 40px 24px; margin-top: auto;
@@ -361,7 +360,6 @@ footer {
 </head>
 <body>
 
-<!-- Header -->
 <header class="header" id="header">
   <div class="header-left">
     <button class="hamburger" id="hamburgerBtn" aria-label="Menu">
@@ -393,10 +391,8 @@ footer {
   </div>
 </header>
 
-<!-- Sidebar Overlay -->
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-<!-- Sidebar -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <img src="/images/timbr.png" height="24" alt="Timbr">
@@ -419,12 +415,10 @@ footer {
   </div>
 </aside>
 
-<!-- Main Content -->
 <main class="main-content" id="mainContent">
   <h1 class="page-title">Leaderboard</h1>
-  <p class="page-subtitle">Rankings based on actual study time (planned time excluded, lost time deducted)</p>
+  <p class="page-subtitle">Rankings based on actual study time (planned time excluded, lost time deducted). Only completed sessions count.</p>
 
-  <!-- Tabs -->
   <div class="tabs" id="tabs">
     <button class="tab-btn active" data-period="today">Today</button>
     <button class="tab-btn" data-period="week">This Week</button>
@@ -432,20 +426,11 @@ footer {
     <button class="tab-btn" data-period="all">All Time</button>
   </div>
 
-  <!-- Podium -->
-  <div class="podium" id="podium">
-    <div class="skeleton skeleton-text" style="height:100px;"></div>
-  </div>
+  <div class="podium" id="podium"></div>
 
-  <!-- Full List -->
-  <div class="leaderboard-list" id="leaderboardList">
-    <div class="leaderboard-item"><div class="skeleton skeleton-text"></div></div>
-    <div class="leaderboard-item"><div class="skeleton skeleton-text"></div></div>
-    <div class="leaderboard-item"><div class="skeleton skeleton-text short"></div></div>
-  </div>
+  <div class="leaderboard-list" id="leaderboardList"></div>
 </main>
 
-<!-- Footer -->
 <footer>
   <div class="footer-grid">
     <div class="footer-col"><h4>Timbr</h4><p style="color:var(--gray);font-size:13px;">Track every minute. Build lasting habits.</p></div>
@@ -456,11 +441,9 @@ footer {
   <div class="footer-bottom">&copy; 2024 Timbr. All rights reserved.</div>
 </footer>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script>
-// Auth Check
 const token = localStorage.getItem('timbr_token');
 const user = JSON.parse(localStorage.getItem('timbr_user') || 'null');
 if (!token || !user) { window.location.href = '/login.html'; }
@@ -481,13 +464,10 @@ function showToast(msg, type='success') {
   setTimeout(() => t.classList.remove('show'), 3500);
 }
 
-// FIXED: api() function - GET requests use query string
 async function api(method, path, body) {
   try {
     const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }};
-    
     let url = API_BASE + path;
-    
     if (method === 'GET' && body) {
       const params = new URLSearchParams();
       for (const [key, value] of Object.entries(body)) {
@@ -500,11 +480,11 @@ async function api(method, path, body) {
     } else if (body) {
       opts.body = JSON.stringify(body);
     }
-    
     const res = await fetch(url, opts);
     const data = await res.json();
     return { ok: res.ok, data, status: res.status };
   } catch(e) {
+    console.error('API Error:', e);
     return { ok: false, data: { error: 'Network error. Please try again.' }, status: 0 };
   }
 }
@@ -515,13 +495,11 @@ function logout() {
   window.location.href = '/login.html';
 }
 
-// UI Setup
 document.getElementById('profileName').textContent = user.name || 'Student';
 document.getElementById('sidebarName').textContent = user.name || 'Student';
 document.getElementById('sidebarEmail').textContent = user.email || '';
 document.getElementById('profileAvatar').textContent = (user.name || 'S').charAt(0).toUpperCase();
 
-// Header scroll
 let lastScroll = 0;
 window.addEventListener('scroll', () => {
   const current = window.pageYOffset;
@@ -529,7 +507,6 @@ window.addEventListener('scroll', () => {
   lastScroll = current;
 });
 
-// Sidebar
 const sidebar = document.getElementById('sidebar');
 const overlay = document.getElementById('sidebarOverlay');
 document.getElementById('hamburgerBtn').addEventListener('click', () => {
@@ -538,14 +515,12 @@ document.getElementById('hamburgerBtn').addEventListener('click', () => {
 });
 overlay.addEventListener('click', () => { sidebar.classList.remove('open'); overlay.classList.remove('show'); });
 
-// Profile dropdown
 document.getElementById('profileBtn').addEventListener('click', (e) => {
   e.stopPropagation();
   document.getElementById('profileDropdown').classList.toggle('show');
 });
 document.addEventListener('click', () => document.getElementById('profileDropdown').classList.remove('show'));
 
-// Tabs
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -555,17 +530,13 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
-// ============================================================
-// Load Leaderboard
-// ============================================================
 async function loadLeaderboard() {
   const podium = document.getElementById('podium');
   const list = document.getElementById('leaderboardList');
   
-  podium.innerHTML = '<div class="skeleton skeleton-text" style="height:100px;"></div>';
-  list.innerHTML = '<div class="leaderboard-item"><div class="skeleton skeleton-text"></div></div><div class="leaderboard-item"><div class="skeleton skeleton-text"></div></div>';
+  podium.innerHTML = '<div style="text-align:center;width:100%;padding:40px;color:var(--gray);">Loading...</div>';
+  list.innerHTML = '<div class="leaderboard-item"><div class="skeleton skeleton-text"></div></div>';
 
-  // Pass period as query param
   const res = await api('GET', '/leaderboard', { period: currentPeriod });
   
   if (!res.ok) {
@@ -579,40 +550,72 @@ async function loadLeaderboard() {
   
   if (data.length === 0) {
     podium.innerHTML = '';
-    list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gray);"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px;"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 6 9 6 9z"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 18 9 18 9z"/></svg><p>No data for this period yet. Start studying!</p></div>';
+    list.innerHTML = `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 6 9 6 9z"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 18 9 18 9z"/></svg>
+        <h3>No rankings yet</h3>
+        <p>Complete study sessions with actual start/end times to appear on the leaderboard.</p>
+      </div>`;
     return;
   }
 
   // Podium (top 3)
   const top3 = data.slice(0, 3);
-  
-  // Reorder for podium: 2nd, 1st, 3rd
-  const podiumOrder = top3.length === 3 ? [top3[1], top3[0], top3[2]] : top3.length === 2 ? [top3[0], top3[1]] : top3;
-  const podiumClasses = top3.length === 3 ? ['silver', 'gold', 'bronze'] : top3.length === 2 ? ['gold', 'silver'] : ['gold'];
-  
-  podium.innerHTML = podiumOrder.map((entry, i) => {
-    const cls = podiumClasses[i];
-    const initials = (entry.name || entry.username).charAt(0).toUpperCase();
-    const rankMap = { gold: '1', silver: '2', bronze: '3' };
-    return `
-      <div class="podium-item ${cls}">
-        <div class="podium-rank ${cls}">${rankMap[cls]}</div>
-        <div class="podium-avatar">${esc(initials)}</div>
-        <div class="podium-name">${esc(entry.name)}</div>
-        <div class="podium-hours">${parseFloat(entry.total_hours).toFixed(1)} hrs</div>
+  if (top3.length >= 3) {
+    const second = top3[1];
+    const first = top3[0];
+    const third = top3[2];
+    podium.innerHTML = `
+      <div class="podium-item silver">
+        <div class="podium-rank silver">2</div>
+        <div class="podium-avatar">${esc((second.name || second.username).charAt(0).toUpperCase())}</div>
+        <div class="podium-name">${esc(second.name)}</div>
+        <div class="podium-hours">${parseFloat(second.total_hours).toFixed(1)} hrs</div>
+      </div>
+      <div class="podium-item gold">
+        <div class="podium-rank gold">1</div>
+        <div class="podium-avatar">${esc((first.name || first.username).charAt(0).toUpperCase())}</div>
+        <div class="podium-name">${esc(first.name)}</div>
+        <div class="podium-hours">${parseFloat(first.total_hours).toFixed(1)} hrs</div>
+      </div>
+      <div class="podium-item bronze">
+        <div class="podium-rank bronze">3</div>
+        <div class="podium-avatar">${esc((third.name || third.username).charAt(0).toUpperCase())}</div>
+        <div class="podium-name">${esc(third.name)}</div>
+        <div class="podium-hours">${parseFloat(third.total_hours).toFixed(1)} hrs</div>
       </div>`;
-  }).join('');
+  } else if (top3.length === 2) {
+    podium.innerHTML = `
+      <div class="podium-item gold">
+        <div class="podium-rank gold">1</div>
+        <div class="podium-avatar">${esc((top3[0].name || top3[0].username).charAt(0).toUpperCase())}</div>
+        <div class="podium-name">${esc(top3[0].name)}</div>
+        <div class="podium-hours">${parseFloat(top3[0].total_hours).toFixed(1)} hrs</div>
+      </div>
+      <div class="podium-item silver">
+        <div class="podium-rank silver">2</div>
+        <div class="podium-avatar">${esc((top3[1].name || top3[1].username).charAt(0).toUpperCase())}</div>
+        <div class="podium-name">${esc(top3[1].name)}</div>
+        <div class="podium-hours">${parseFloat(top3[1].total_hours).toFixed(1)} hrs</div>
+      </div>`;
+  } else if (top3.length === 1) {
+    podium.innerHTML = `
+      <div class="podium-item gold">
+        <div class="podium-rank gold">1</div>
+        <div class="podium-avatar">${esc((top3[0].name || top3[0].username).charAt(0).toUpperCase())}</div>
+        <div class="podium-name">${esc(top3[0].name)}</div>
+        <div class="podium-hours">${parseFloat(top3[0].total_hours).toFixed(1)} hrs</div>
+      </div>`;
+  }
 
   // Full list
   list.innerHTML = data.map((entry, i) => {
     const rank = i + 1;
     const isCurrentUser = entry.id === user.id;
     const initials = (entry.name || entry.username).charAt(0).toUpperCase();
-    const topClass = rank <= 3 ? ' top' : '';
-    
     return `
       <div class="leaderboard-item${isCurrentUser ? ' current-user' : ''}">
-        <div class="rank-num${topClass}">#${rank}</div>
+        <div class="rank-num${rank <= 3 ? ' top' : ''}">#${rank}</div>
         <div class="user-avatar">${esc(initials)}</div>
         <div class="user-info">
           <div class="user-name">${esc(entry.name)} ${isCurrentUser ? '<span style="font-size:10px;color:var(--accent);">(You)</span>' : ''}</div>
@@ -625,19 +628,12 @@ async function loadLeaderboard() {
       </div>`;
   }).join('');
   
-  // If user not in top results
   const userInList = data.find(d => d.id === user.id);
   if (!userInList && data.length > 0) {
-    list.innerHTML += `
-      <div style="padding:12px 20px;text-align:center;color:var(--gray);font-size:13px;border-top:1px solid var(--border);">
-        You are not ranked for this period. Start studying to appear here.
-      </div>`;
+    list.innerHTML += '<div style="padding:12px 20px;text-align:center;color:var(--gray);font-size:13px;border-top:1px solid var(--border);">You are not ranked for this period. Complete sessions with actual time to appear here.</div>';
   }
 }
 
-// ============================================================
-// Notifications Badge
-// ============================================================
 async function loadNotifBadge() {
   const res = await api('GET', '/notifications/unread-count');
   if (res.ok && res.data.count > 0) {
@@ -647,9 +643,6 @@ async function loadNotifBadge() {
   }
 }
 
-// ============================================================
-// Init
-// ============================================================
 loadLeaderboard();
 loadNotifBadge();
 setInterval(loadNotifBadge, 60000);
