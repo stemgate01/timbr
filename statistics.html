@@ -530,7 +530,7 @@ function clearCanvas(canvas) {
   const ctx = canvas.getContext('2d');
   const dpr = Math.min(window.devicePixelRatio || 1, 3);
   const wrapper = canvas.parentElement; // .chart-wrap
-  const cssWidth = Math.round(wrapper.clientWidth);
+  const cssWidth = Math.max(1, Math.round(wrapper.clientWidth));
   const cssHeight = parseInt(canvas.getAttribute('height'), 10) || 300;
 
   // Lock CSS display size explicitly — never inferred from the canvas's
@@ -538,14 +538,31 @@ function clearCanvas(canvas) {
   canvas.style.width = cssWidth + 'px';
   canvas.style.height = cssHeight + 'px';
 
-  const targetW = Math.round(cssWidth * dpr);
-  const targetH = Math.round(cssHeight * dpr);
-  if (canvas.width !== targetW) canvas.width = targetW;
-  if (canvas.height !== targetH) canvas.height = targetH;
+  const targetW = Math.max(1, Math.round(cssWidth * dpr));
+  const targetH = Math.max(1, Math.round(cssHeight * dpr));
 
-  ctx.setTransform(1, 0, 0, 1, 0, 0); // reset before reapplying, else scale compounds
+  // ALWAYS reassign width/height (never skip, even if the value looks
+  // unchanged) — this is what actually resets/clears the canvas bitmap
+  // per spec. Skipping it when "already correct" was the residual bug:
+  // it meant old pixels could survive a redraw whenever the computed
+  // target happened to match the previous one.
+  canvas.width = targetW;
+  canvas.height = targetH;
+
+  // Clear in RAW device-pixel space, before any scale transform is
+  // applied. This guarantees the clear covers the entire physical
+  // backing store exactly (canvas.width x canvas.height), with zero
+  // chance of a rounding gap — clearing in *scaled* CSS-pixel space
+  // (the old code) could leave a 1px-ish sliver uncleared whenever
+  // cssWidth * dpr didn't divide back to a clean integer, and that
+  // sliver of old bar-color pixels compounding redraw after redraw is
+  // exactly what reads as "gradually getting bigger."
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Now switch into CSS-pixel coordinate space for all subsequent
+  // drawing calls in this frame.
   ctx.scale(dpr, dpr);
-  ctx.clearRect(0, 0, cssWidth, cssHeight);
 
   lastCanvasSize[canvas.id] = { w: cssWidth, h: cssHeight };
   return { ctx, w: cssWidth, h: cssHeight };
