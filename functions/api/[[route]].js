@@ -1,6 +1,6 @@
 // ============================================================
-// TIMBR - Complete Backend API
-// Single file: functions/api/[[route]].js
+// TIMBR - Complete Fixed Backend API
+// functions/api/[[route]].js
 // ============================================================
 
 // --- Crypto Helpers ---
@@ -65,7 +65,6 @@ function err(msg, status = 400) {
   return json({ error: msg }, status);
 }
 
-// --- Auth Helpers ---
 async function getUser(request) {
   const auth = request.headers.get('Authorization');
   if (!auth || !auth.startsWith('Bearer ')) return null;
@@ -216,7 +215,7 @@ async function runMigrations(db) {
 // ROUTE HANDLERS
 // ============================================================
 
-// Auth routes
+// Auth routes (unchanged - same as previous version)
 async function handleAuth(method, path, body, db) {
   if (method === 'POST' && path === '/auth/register') {
     const { username, name, email, password, device_fingerprint } = body;
@@ -296,7 +295,7 @@ async function handleAuth(method, path, body, db) {
   return err('Auth route not found', 404);
 }
 
-// User routes
+// User routes (unchanged - same as previous version)
 async function handleUser(method, path, body, db, user) {
   const userId = user.id;
 
@@ -408,7 +407,7 @@ async function handleUser(method, path, body, db, user) {
   return err('User route not found', 404);
 }
 
-// Session routes
+// Session routes (unchanged)
 async function handleSessions(method, path, body, db, user) {
   const userId = user.id;
   const sessionMatch = path.match(/^\/sessions\/(\d+)$/);
@@ -420,37 +419,21 @@ async function handleSessions(method, path, body, db, user) {
     const page = parseInt(body.page) || 1;
     const limit = parseInt(body.limit) || 20;
     
-    let sql = 'SELECT * FROM study_sessions WHERE user_id = ?';
-    let countSql = 'SELECT COUNT(*) as count FROM study_sessions WHERE user_id = ?';
+    let whereClause = 'WHERE user_id = ?';
     const params = [userId];
-    const countParams = [userId];
     
-    if (date) { 
-      sql += ' AND study_date = ?'; 
-      countSql += ' AND study_date = ?';
-      params.push(date); 
-      countParams.push(date);
-    }
-    if (subject) { 
-      sql += ' AND subject = ?'; 
-      countSql += ' AND subject = ?';
-      params.push(subject); 
-      countParams.push(subject);
-    }
-    if (status) { 
-      sql += ' AND status = ?'; 
-      countSql += ' AND status = ?';
-      params.push(status); 
-      countParams.push(status);
-    }
+    if (date) { whereClause += ' AND study_date = ?'; params.push(date); }
+    if (subject) { whereClause += ' AND subject = ?'; params.push(subject); }
+    if (status) { whereClause += ' AND status = ?'; params.push(status); }
     
-    sql += ' ORDER BY study_date DESC, created_at DESC LIMIT ? OFFSET ?';
+    const countResult = await db.prepare(`SELECT COUNT(*) as count FROM study_sessions ${whereClause}`).bind(...params).first();
+    
+    const sql = `SELECT * FROM study_sessions ${whereClause} ORDER BY study_date DESC, created_at DESC LIMIT ? OFFSET ?`;
     params.push(limit, (page - 1) * limit);
     
     const sessions = await db.prepare(sql).bind(...params).all();
-    const total = await db.prepare(countSql).bind(...countParams).first();
     
-    return json({ sessions: sessions.results, total: total.count, page, limit });
+    return json({ sessions: sessions.results, total: countResult.count, page, limit });
   }
 
   if (method === 'POST' && path === '/sessions') {
@@ -497,7 +480,7 @@ async function handleSessions(method, path, body, db, user) {
   return err('Session route not found', 404);
 }
 
-// Task routes
+// Task routes (unchanged)
 async function handleTasks(method, path, body, db, user) {
   const userId = user.id;
   const taskMatch = path.match(/^\/tasks\/(\d+)$/);
@@ -531,7 +514,7 @@ async function handleTasks(method, path, body, db, user) {
   return err('Task route not found', 404);
 }
 
-// Notification routes
+// Notification routes (unchanged)
 async function handleNotifications(method, path, body, db, user) {
   const userId = user.id;
   const notifMatch = path.match(/^\/notifications\/(\d+)\/read$/);
@@ -573,7 +556,7 @@ async function handleNotifications(method, path, body, db, user) {
   return err('Notification route not found', 404);
 }
 
-// Statistics routes
+// Statistics routes (unchanged)
 async function handleStats(method, path, body, db, user) {
   const userId = user.id;
   
@@ -657,7 +640,9 @@ async function handleStats(method, path, body, db, user) {
   return err('Stats route not found', 404);
 }
 
-// Leaderboard routes
+// ============================================================
+// FIXED: Leaderboard routes
+// ============================================================
 async function handleLeaderboard(method, path, body, db, user) {
   if (method === 'GET' && path === '/leaderboard') {
     const period = body.period || 'today';
@@ -676,6 +661,7 @@ async function handleLeaderboard(method, path, body, db, user) {
       dateFilter = `AND s.study_date >= '${ms.toISOString().split('T')[0]}'`;
     }
     
+    // FIXED: Only show approved, non-blocked students with actual study time > 0
     const leaderboard = await db.prepare(`
       SELECT 
         u.id, u.username, u.name, COUNT(s.id) as session_count,
@@ -687,8 +673,11 @@ async function handleLeaderboard(method, path, body, db, user) {
           ELSE 0 END), 0), 1) as total_hours
       FROM users u
       LEFT JOIN study_sessions s ON u.id = s.user_id ${dateFilter} AND s.status = 'Completed'
-      WHERE u.role = 'student' AND u.approved = 1 AND u.blocked = 0
+      WHERE u.role = 'student' 
+        AND u.approved = 1 
+        AND u.blocked = 0
       GROUP BY u.id
+      HAVING total_minutes > 0
       ORDER BY total_minutes DESC
       LIMIT 50
     `).all();
@@ -699,12 +688,16 @@ async function handleLeaderboard(method, path, body, db, user) {
   return err('Leaderboard route not found', 404);
 }
 
-// Admin routes
+// ============================================================
+// FIXED: Admin routes
+// ============================================================
 async function handleAdmin(method, path, body, db, user) {
   if (user.role !== 'admin') return err('Admin access required', 403);
   
+  // FIXED: Dashboard stats
   if (method === 'GET' && path === '/admin/dashboard') {
     const totalUsers = await db.prepare('SELECT COUNT(*) as count FROM users').first();
+    const approvedUsers = await db.prepare('SELECT COUNT(*) as count FROM users WHERE approved = 1 AND blocked = 0').first();
     const pendingUsers = await db.prepare('SELECT COUNT(*) as count FROM users WHERE approved = 0 AND blocked = 0').first();
     const blockedUsers = await db.prepare('SELECT COUNT(*) as count FROM users WHERE blocked = 1').first();
     const totalSessions = await db.prepare('SELECT COUNT(*) as count FROM study_sessions').first();
@@ -715,6 +708,7 @@ async function handleAdmin(method, path, body, db, user) {
       FROM study_sessions WHERE status = 'Completed'
     `).first();
     
+    // FIXED: Top students - only approved, non-blocked, with actual study time
     const topUsers = await db.prepare(`
       SELECT u.username, u.name, 
         ROUND(COALESCE(SUM(CASE WHEN s.actual_end IS NOT NULL AND s.actual_start IS NOT NULL
@@ -722,12 +716,18 @@ async function handleAdmin(method, path, body, db, user) {
           ELSE 0 END), 0), 1) as total_hours
       FROM users u
       LEFT JOIN study_sessions s ON u.id = s.user_id AND s.status = 'Completed'
-      WHERE u.role = 'student'
-      GROUP BY u.id ORDER BY total_hours DESC LIMIT 10
+      WHERE u.role = 'student' 
+        AND u.approved = 1 
+        AND u.blocked = 0
+      GROUP BY u.id
+      HAVING total_hours > 0
+      ORDER BY total_hours DESC 
+      LIMIT 10
     `).all();
     
     return json({
       total_users: totalUsers.count,
+      approved_users: approvedUsers.count,
       pending_users: pendingUsers.count,
       blocked_users: blockedUsers.count,
       total_sessions: totalSessions.count,
@@ -736,6 +736,7 @@ async function handleAdmin(method, path, body, db, user) {
     });
   }
 
+  // FIXED: User list with proper search/count
   if (method === 'GET' && path === '/admin/users') {
     const search = body.search || null;
     const role = body.role || null;
@@ -743,24 +744,29 @@ async function handleAdmin(method, path, body, db, user) {
     const page = parseInt(body.page) || 1;
     const limit = parseInt(body.limit) || 15;
     
-    let whereClause = 'WHERE 1=1';
+    let whereParts = [];
     const params = [];
     
     if (search) { 
-      whereClause += ' AND (username LIKE ? OR email LIKE ? OR name LIKE ?)'; 
+      whereParts.push('(username LIKE ? OR email LIKE ? OR name LIKE ?)'); 
       params.push(`%${search}%`, `%${search}%`, `%${search}%`); 
     }
-    if (role) { whereClause += ' AND role = ?'; params.push(role); }
-    if (status === 'pending') { whereClause += ' AND approved = 0 AND blocked = 0'; }
-    else if (status === 'approved') { whereClause += ' AND approved = 1 AND blocked = 0'; }
-    else if (status === 'blocked') { whereClause += ' AND blocked = 1'; }
+    if (role) { whereParts.push('role = ?'); params.push(role); }
+    if (status === 'pending') { whereParts.push('approved = 0 AND blocked = 0'); }
+    else if (status === 'approved') { whereParts.push('approved = 1 AND blocked = 0'); }
+    else if (status === 'blocked') { whereParts.push('blocked = 1'); }
     
-    const countResult = await db.prepare(`SELECT COUNT(*) as count FROM users ${whereClause}`).bind(...params).first();
+    const whereClause = whereParts.length > 0 ? 'WHERE ' + whereParts.join(' AND ') : '';
     
-    const sql = `SELECT id, username, name, email, role, approved, blocked, created_at FROM users ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
-    params.push(limit, (page - 1) * limit);
+    // Count query
+    const countSql = `SELECT COUNT(*) as count FROM users ${whereClause}`;
+    const countResult = await db.prepare(countSql).bind(...params).first();
     
-    const users = await db.prepare(sql).bind(...params).all();
+    // Data query
+    const dataSql = `SELECT id, username, name, email, role, approved, blocked, created_at FROM users ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+    const dataParams = [...params, limit, (page - 1) * limit];
+    
+    const users = await db.prepare(dataSql).bind(...dataParams).all();
     
     return json({ users: users.results, total: countResult.count, page, limit });
   }
@@ -903,22 +909,18 @@ export async function onRequest(context) {
   const method = request.method;
   let path = url.pathname.replace('/api', '');
   
-  // CORS preflight
   if (method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
   
-  // Ensure tables on first request
   if (!globalThis.__tablesReady) {
     await ensureTables(db);
     await runMigrations(db);
     globalThis.__tablesReady = true;
   }
   
-  // Parse body based on method
   let body = {};
   
-  // For POST/PUT/PATCH - parse JSON body
   if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
     try { 
       const contentType = request.headers.get('Content-Type') || '';
@@ -933,7 +935,6 @@ export async function onRequest(context) {
     }
   }
   
-  // For GET/DELETE - parse URL query parameters
   if (method === 'GET' || method === 'DELETE') {
     for (const [key, value] of url.searchParams) {
       body[key] = value;
@@ -941,39 +942,22 @@ export async function onRequest(context) {
   }
   
   try {
-    // Public routes
     if (path.startsWith('/auth')) {
       return handleAuth(method, path, body, db);
     }
     
-    // Protected routes
     const user = await getUser(request);
     if (!user) {
       return err('Authentication required', 401);
     }
     
-    // Route to appropriate handler
-    if (path.startsWith('/user')) {
-      return handleUser(method, path, body, db, user);
-    }
-    if (path.startsWith('/sessions')) {
-      return handleSessions(method, path, body, db, user);
-    }
-    if (path.startsWith('/tasks')) {
-      return handleTasks(method, path, body, db, user);
-    }
-    if (path.startsWith('/notifications')) {
-      return handleNotifications(method, path, body, db, user);
-    }
-    if (path.startsWith('/stats')) {
-      return handleStats(method, path, body, db, user);
-    }
-    if (path.startsWith('/leaderboard')) {
-      return handleLeaderboard(method, path, body, db, user);
-    }
-    if (path.startsWith('/admin')) {
-      return handleAdmin(method, path, body, db, user);
-    }
+    if (path.startsWith('/user')) return handleUser(method, path, body, db, user);
+    if (path.startsWith('/sessions')) return handleSessions(method, path, body, db, user);
+    if (path.startsWith('/tasks')) return handleTasks(method, path, body, db, user);
+    if (path.startsWith('/notifications')) return handleNotifications(method, path, body, db, user);
+    if (path.startsWith('/stats')) return handleStats(method, path, body, db, user);
+    if (path.startsWith('/leaderboard')) return handleLeaderboard(method, path, body, db, user);
+    if (path.startsWith('/admin')) return handleAdmin(method, path, body, db, user);
     
     return err('Route not found', 404);
   } catch (e) {
