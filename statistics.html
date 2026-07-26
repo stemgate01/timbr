@@ -45,7 +45,6 @@ body {
 h1, h2, h3, h4 { font-family: 'Cormorant Garamond', serif; }
 a { color: var(--accent); text-decoration: none; }
 
-/* Header */
 .header {
   position: fixed; top:0; left:0; right:0;
   height: var(--header-h);
@@ -124,7 +123,6 @@ a { color: var(--accent); text-decoration: none; }
 }
 .profile-dropdown .divider { height: 1px; background: var(--border); margin: 6px 0; }
 
-/* Sidebar */
 .sidebar-overlay {
   position: fixed; inset:0;
   background: rgba(0,0,0,0.5);
@@ -164,7 +162,6 @@ a { color: var(--accent); text-decoration: none; }
 .sidebar-nav a svg { width: 20px; height: 20px; flex-shrink: 0; }
 .sidebar-footer { padding: 12px 20px; border-top: 1px solid var(--border); }
 
-/* Main */
 .main-content {
   margin-left: 0;
   margin-top: var(--header-h);
@@ -173,7 +170,6 @@ a { color: var(--accent); text-decoration: none; }
 }
 .page-title { font-size: 28px; margin-bottom: 8px; }
 
-/* Tabs */
 .tabs {
   display: flex; gap: 4px; flex-wrap: wrap;
   margin-bottom: 24px;
@@ -196,7 +192,6 @@ a { color: var(--accent); text-decoration: none; }
   color: #05080f;
 }
 
-/* Stats Cards */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -224,7 +219,6 @@ a { color: var(--accent); text-decoration: none; }
   margin-top: 2px;
 }
 
-/* Chart Container */
 .chart-section {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -238,9 +232,8 @@ a { color: var(--accent); text-decoration: none; }
   width: 100%;
   overflow-x: auto;
 }
-canvas { width: 100%; max-width: 100%; }
+canvas { width: 100%; max-width: 100%; display: block; }
 
-/* Table */
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
 th {
@@ -255,7 +248,6 @@ td {
   border-bottom: 1px solid var(--border);
 }
 
-/* Skeleton */
 .skeleton {
   background: linear-gradient(90deg, var(--surface2) 25%, var(--surface3) 50%, var(--surface2) 75%);
   background-size: 200% 100%;
@@ -264,9 +256,14 @@ td {
 }
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 .skeleton-text { height: 14px; margin-bottom: 8px; width: 80%; }
-.skeleton-box { height: 200px; width: 100%; }
 
-/* Toast */
+.empty-state {
+  text-align: center; padding: 40px 20px;
+}
+.empty-state svg { width: 48px; height: 48px; color: var(--gray); margin-bottom: 16px; }
+.empty-state h3 { color: var(--gray2); margin-bottom: 8px; }
+.empty-state p { color: var(--gray); font-size: 14px; }
+
 .toast {
   position: fixed; bottom: 24px; right: 24px;
   padding: 12px 20px; border-radius: var(--radius);
@@ -278,15 +275,6 @@ td {
 .toast-success { background: var(--green); color: #000; }
 .toast-error { background: var(--red); color: #fff; }
 
-/* Empty */
-.empty-state {
-  text-align: center; padding: 40px 20px;
-}
-.empty-state svg { width: 48px; height: 48px; color: var(--gray); margin-bottom: 16px; }
-.empty-state h3 { color: var(--gray2); margin-bottom: 8px; }
-.empty-state p { color: var(--gray); font-size: 14px; }
-
-/* Footer */
 footer {
   border-top: 1px solid var(--border);
   padding: 40px 24px; margin-top: auto;
@@ -326,7 +314,6 @@ footer {
 </head>
 <body>
 
-<!-- Header -->
 <header class="header" id="header">
   <div class="header-left">
     <button class="hamburger" id="hamburgerBtn" aria-label="Menu">
@@ -358,10 +345,8 @@ footer {
   </div>
 </header>
 
-<!-- Sidebar Overlay -->
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-<!-- Sidebar -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <img src="/images/timbr.png" height="24" alt="Timbr">
@@ -384,12 +369,10 @@ footer {
   </div>
 </aside>
 
-<!-- Main Content -->
 <main class="main-content" id="mainContent">
   <h1 class="page-title">Statistics</h1>
   <p style="color:var(--gray);font-size:14px;margin-bottom:20px;">All stats computed from raw session data. Nothing is pre-stored.</p>
 
-  <!-- Tabs -->
   <div class="tabs" id="tabs">
     <button class="tab-btn active" data-period="daily">Daily</button>
     <button class="tab-btn" data-period="weekly">Weekly</button>
@@ -398,7 +381,6 @@ footer {
     <button class="tab-btn" data-period="subjects">Subjects</button>
   </div>
 
-  <!-- Stats Cards -->
   <div class="stats-grid" id="statsGrid">
     <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
     <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
@@ -406,33 +388,22 @@ footer {
     <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
   </div>
 
-  <!-- Chart -->
   <div class="chart-section">
     <h3 id="chartTitle">Daily Study Time</h3>
-    <div class="chart-wrap">
-      <canvas id="mainChart" height="300"></canvas>
-    </div>
+    <div class="chart-wrap"><canvas id="mainChart" height="300"></canvas></div>
   </div>
 
-  <!-- Subject Distribution -->
   <div class="chart-section" id="subjectDistSection">
     <h3>Subject Distribution</h3>
-    <div class="chart-wrap">
-      <canvas id="subjectChart" height="250"></canvas>
-    </div>
+    <div class="chart-wrap"><canvas id="subjectChart" height="250"></canvas></div>
   </div>
 
-  <!-- Detailed Table -->
   <div class="chart-section">
     <h3>Detailed Breakdown</h3>
-    <div id="detailTable">
-      <div class="skeleton skeleton-text"></div>
-      <div class="skeleton skeleton-text"></div>
-    </div>
+    <div id="detailTable"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text"></div></div>
   </div>
 </main>
 
-<!-- Footer -->
 <footer>
   <div class="footer-grid">
     <div class="footer-col"><h4>Timbr</h4><p style="color:var(--gray);font-size:13px;">Track every minute. Build lasting habits.</p></div>
@@ -443,17 +414,16 @@ footer {
   <div class="footer-bottom">&copy; 2024 Timbr. All rights reserved.</div>
 </footer>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script>
-// Auth Check
 const token = localStorage.getItem('timbr_token');
 const user = JSON.parse(localStorage.getItem('timbr_user') || 'null');
 if (!token || !user) { window.location.href = '/login.html'; }
 
 const API_BASE = '/api';
 let currentPeriod = 'daily';
+const COLORS = ['#00d4aa', '#00b894', '#f59e0b', '#f0566a', '#7c3aed', '#3b82f6', '#10d48e', '#ec4899', '#06b6d4', '#f97316'];
 
 function esc(s) {
   const d = document.createElement('div');
@@ -468,13 +438,10 @@ function showToast(msg, type='success') {
   setTimeout(() => t.classList.remove('show'), 3500);
 }
 
-// FIXED: api() function - GET requests use query string
 async function api(method, path, body) {
   try {
     const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }};
-    
     let url = API_BASE + path;
-    
     if (method === 'GET' && body) {
       const params = new URLSearchParams();
       for (const [key, value] of Object.entries(body)) {
@@ -487,462 +454,12 @@ async function api(method, path, body) {
     } else if (body) {
       opts.body = JSON.stringify(body);
     }
-    
-    const res = await fetch(url, opts);
-    const data = await res.json();
-    return { ok: res.ok, data, status: res.status };
-  } catch(e) {
-    return { ok: false, data: { error: 'Network error. Please try again.' }, status: 0 };
-  }
-}
-
-function logout() {
-  localStorage.removeItem('timbr_token');
-  localStorage.removeItem('timbr_user');
-  window.location.href = '/login.html';
-}
-
-// UI Setup
-document.getElementById('profileName').textContent = user.name || 'Student';
-document.getElementById('sidebarName').textContent = user.name || 'Student';
-document.getElementById('sidebarEmail').textContent = user.email || '';
-document.getElementById('profileAvatar').textContent = (user.name || 'S').charAt(0).toUpperCase();
-
-// Header scroll
-let lastScroll = 0;
-window.addEventListener('scroll', () => {
-  const current = window.pageYOffset;
-  document.getElementById('header').classList.toggle('hidden', current > lastScroll && current > 70);
-  lastScroll = current;
-});
-
-// Sidebar
-const sidebar = document.getElementById('sidebar');
-const overlay = document.getElementById('sidebarOverlay');
-document.getElementById('hamburgerBtn').addEventListener('click', () => {
-  sidebar.classList.toggle('open');
-  overlay.classList.toggle('show');
-});
-overlay.addEventListener('click', () => { sidebar.classList.remove('open'); overlay.classList.remove('show'); });
-
-// Profile dropdown
-document.getElementById('profileBtn').addEventListener('click', (e) => {
-  e.stopPropagation();
-  document.getElementById('profileDropdown').classList.toggle('show');
-});
-document.addEventListener('click', () => document.getElementById('profileDropdown').classList.remove('show'));
-
-// Tabs
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentPeriod = btn.dataset.period;
-    loadStats();
-  });
-});
-
-// ============================================================
-// Simple Chart Drawing (Canvas-based, no library)
-// ============================================================
-function drawBarChart(canvas, data, labels, colors) {
-  const ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width * dpr;
-  canvas.height = 300 * dpr;
-  ctx.scale(dpr, dpr);
-  
-  const w = rect.width;
-  const h = 300;
-  const padding = { top: 30, right: 20, bottom: 50, left: 50 };
-  const chartW = w - padding.left - padding.right;
-  const chartH = h - padding.top - padding.bottom;
-  
-  ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = '#0b0f1a';
-  ctx.fillRect(0, 0, w, h);
-  
-  const maxVal = Math.max(...data, 1);
-  const barWidth = Math.min(40, chartW / data.length - 8);
-  
-  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-  ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i++) {
-    const y = padding.top + (chartH / 4) * i;
-    ctx.beginPath();
-    ctx.moveTo(padding.left, y);
-    ctx.lineTo(w - padding.right, y);
-    ctx.stroke();
-    
-    ctx.fillStyle = '#7a8899';
-    ctx.font = '11px "DM Mono", monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText(Math.round(maxVal - (maxVal / 4) * i), padding.left - 8, y + 4);
-  }
-  
-  data.forEach((val, i) => {
-    const barH = (val / maxVal) * chartH;
-    const x = padding.left + i * (chartW / data.length) + (chartW / data.length - barWidth) / 2;
-    const y = padding.top + chartH - barH;
-    
-    ctx.fillStyle = colors[i % colors.length];
-    ctx.beginPath();
-    ctx.roundRect(x, y, barWidth, barH, [4, 4, 0, 0]);
-    ctx.fill();
-    
-    ctx.fillStyle = '#a0adb8';
-    ctx.font = '10px "Cabinet Grotesk", sans-serif';
-    ctx.textAlign = 'center';
-    const label = labels[i];
-    if (label && label.length > 8) {
-      ctx.fillText(label.slice(0, 8) + '..', x + barWidth / 2, h - padding.bottom + 18);
-    } else {
-      ctx.fillText(label || '', x + barWidth / 2, h - padding.bottom + 18);
-    }
-  });
-}
-
-function drawPieChart(canvas, data, labels, colors) {
-  const ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width * dpr;
-  canvas.height = 250 * dpr;
-  ctx.scale(dpr, dpr);
-  
-  const w = rect.width;
-  const h = 250;
-  const cx = w / 2;
-  const cy = h / 2;
-  const radius = Math.min(w, h) / 2 - 60;
-  
-  ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = '#0b0f1a';
-  ctx.fillRect(0, 0, w, h);
-  
-  const total = data.reduce((a, b) => a + b, 0);
-  if (total === 0) {
-    ctx.fillStyle = '#7a8899';
-    ctx.font = '14px "Cabinet Grotesk", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('No data', cx, cy);
-    return;
-  }
-  
-  let startAngle = -Math.PI / 2;
-  
-  data.forEach((val, i) => {
-    const sliceAngle = (val / total) * Math.PI * 2;
-    
-    ctx.fillStyle = colors[i % colors.length];
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.arc(cx, cy, radius, startAngle, startAngle + sliceAngle);
-    ctx.closePath();
-    ctx.fill();
-    
-    const midAngle = startAngle + sliceAngle / 2;
-    const labelX = cx + Math.cos(midAngle) * (radius + 30);
-    const labelY = cy + Math.sin(midAngle) * (radius + 30);
-    
-    ctx.fillStyle = '#f0f4f8';
-    ctx.font = '11px "Cabinet Grotesk", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(labels[i] || '', labelX, labelY);
-    ctx.fillText(Math.round(val) + ' min', labelX, labelY + 14);
-    
-    startAngle += sliceAngle;
-  });
-}
-
-function drawLineChart(canvas, data, labels) {
-  const ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width * dpr;
-  canvas.height = 300 * dpr;
-  ctx.scale(dpr, dpr);
-  
-  const w = rect.width;
-  const h = 300;
-  const padding = { top: 30, right: 20, bottom: 50, left: 50 };
-  const chartW = w - padding.left - padding.right;
-  const chartH = h - padding.top - padding.bottom;
-  
-  ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = '#0b0f1a';
-  ctx.fillRect(0, 0, w, h);
-  
-  const maxVal = Math.max(...data, 1);
-  
-  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-  ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i++) {
-    const y = padding.top + (chartH / 4) * i;
-    ctx.beginPath();
-    ctx.moveTo(padding.left, y);
-    ctx.lineTo(w - padding.right, y);
-    ctx.stroke();
-    
-    ctx.fillStyle = '#7a8899';
-    ctx.font = '11px "DM Mono", monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText(Math.round(maxVal - (maxVal / 4) * i), padding.left - 8, y + 4);
-  }
-  
-  ctx.strokeStyle = '#00d4aa';
-  ctx.lineWidth = 2.5;
-  ctx.beginPath();
-  
-  data.forEach((val, i) => {
-    const x = padding.left + (i / Math.max(data.length - 1, 1)) * chartW;
-    const y = padding.top + chartH - (val / maxVal) * chartH;
-    
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-  
-  data.forEach((val, i) => {
-    const x = padding.left + (i / Math.max(data.length - 1, 1)) * chartW;
-    const y = padding.top + chartH - (val / maxVal) * chartH;
-    
-    ctx.fillStyle = '#00d4aa';
-    ctx.beginPath();
-    ctx.arc(x, y, 4, 0, Math.PI * 2);
-    ctx.fill();
-    
-    ctx.fillStyle = '#a0adb8';
-    ctx.font = '10px "Cabinet Grotesk", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(labels[i] || '', x, h - padding.bottom + 18);
-  });
-}
-
-// ============================================================
-// Load Stats
-// ============================================================
-async function loadStats() {
-  const mainChart = document.getElementById('mainChart');
-  const subjectChart = document.getElementById('subjectChart');
-  const subjectDistSection = document.getElementById('subjectDistSection');
-  
-  document.getElementById('statsGrid').innerHTML = `
-    <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
-    <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
-    <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
-    <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>`;
-  
-  if (currentPeriod === 'subjects') {
-    document.getElementById('chartTitle').textContent = 'Subject Distribution';
-    subjectDistSection.style.display = 'none';
-    
-    const res = await api('GET', '/stats/subject-distribution');
-    if (!res.ok) { showToast('Failed to load', 'error'); return; }
-    
-    const data = res.data || [];
-    const labels = data.map(d => d.subject);
-    const values = data.map(d => Math.round(d.total_minutes));
-    const colors = ['#00d4aa', '#00b894', '#f59e0b', '#f0566a', '#7c3aed', '#3b82f6', '#10d48e', '#ec4899'];
-    
-    drawPieChart(subjectChart, values, labels, colors);
-    drawBarChart(mainChart, values, labels, colors);
-    
-    const totalMin = values.reduce((a,b) => a+b, 0);
-    document.getElementById('statsGrid').innerHTML = `
-      <div class="stat-card"><div class="label">Total Subjects</div><div class="value">${data.length}</div></div>
-      <div class="stat-card"><div class="label">Total Minutes</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
-      <div class="stat-card"><div class="label">Top Subject</div><div class="value" style="font-size:18px;">${esc(data[0]?.subject || '-')}</div></div>
-      <div class="stat-card"><div class="label">Total Sessions</div><div class="value">${data.reduce((a,b) => a + b.total_sessions, 0)}</div></div>`;
-    
-    document.getElementById('detailTable').innerHTML = data.length ? `
-      <div class="table-wrap"><table>
-        <thead><tr><th>Subject</th><th>Sessions</th><th>Total Minutes</th><th>Hours</th></tr></thead>
-        <tbody>${data.map(d => `<tr><td>${esc(d.subject)}</td><td>${d.total_sessions}</td><td>${Math.round(d.total_minutes)}</td><td>${(d.total_minutes / 60).toFixed(1)}</td></tr>`).join('')}</tbody>
-      </table></div>` : '<p style="color:var(--gray);">No data yet.</p>';
-    
-  } else if (currentPeriod === 'daily') {
-    subjectDistSection.style.display = 'block';
-    document.getElementById('chartTitle').textContent = 'Daily Study Time';
-    
-    const today = new Date().toISOString().split('T')[0];
-    const res = await api('GET', '/stats/daily', { date: today });
-    if (!res.ok) { showToast('Failed to load', 'error'); return; }
-    
-    const data = res.data.stats || [];
-    const labels = data.map(d => d.subject);
-    const actualMins = data.map(d => Math.round(d.actual_minutes));
-    const colors = ['#00d4aa', '#f0566a', '#f59e0b', '#7c3aed', '#3b82f6'];
-    
-    drawBarChart(mainChart, actualMins, labels, colors);
-    
-    const subRes = await api('GET', '/stats/subject-distribution');
-    if (subRes.ok) {
-      const subData = subRes.data || [];
-      drawPieChart(subjectChart, subData.map(d => Math.round(d.total_minutes)), subData.map(d => d.subject), ['#00d4aa', '#00b894', '#f59e0b', '#f0566a', '#7c3aed', '#3b82f6', '#10d48e', '#ec4899']);
-    }
-    
-    const totalMin = actualMins.reduce((a,b) => a+b, 0);
-    const totalLost = data.reduce((a,d) => a + Math.round(d.lost_minutes), 0);
-    document.getElementById('statsGrid').innerHTML = `
-      <div class="stat-card"><div class="label">Today's Study</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
-      <div class="stat-card"><div class="label">Lost Time</div><div class="value" style="color:var(--red);">${totalLost}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
-      <div class="stat-card"><div class="label">Sessions</div><div class="value">${data.length}</div></div>
-      <div class="stat-card"><div class="label">Completed</div><div class="value">${data.reduce((a,d) => a + d.completed, 0)}</div></div>`;
-    
-    document.getElementById('detailTable').innerHTML = data.length ? `
-      <div class="table-wrap"><table>
-        <thead><tr><th>Subject</th><th>Sessions</th><th>Completed</th><th>Partial</th><th>Missed</th><th>Minutes</th><th>Lost</th></tr></thead>
-        <tbody>${data.map(d => `<tr><td>${esc(d.subject)}</td><td>${d.session_count}</td><td>${d.completed}</td><td>${d.partial}</td><td>${d.missed}</td><td>${Math.round(d.actual_minutes)}</td><td>${Math.round(d.lost_minutes)}</td></tr>`).join('')}</tbody>
-      </table></div>` : '<div class="empty-state"><p style="color:var(--gray);">No sessions today</p></div>';
-    
-  } else if (currentPeriod === 'weekly') {
-    subjectDistSection.style.display = 'block';
-    document.getElementById('chartTitle').textContent = 'Weekly Study Time';
-    
-    const res = await api('GET', '/stats/weekly');
-    if (!res.ok) { showToast('Failed to load', 'error'); return; }
-    
-    const data = res.data.stats || [];
-    const labels = data.map(d => d.study_date ? d.study_date.slice(5) : '');
-    const values = data.map(d => Math.round(d.actual_minutes));
-    const colors = ['#00d4aa', '#00b894', '#10d48e', '#34d399', '#6ee7b7', '#a7f3d0', '#d1fae5'];
-    
-    drawBarChart(mainChart, values, labels, colors);
-    
-    const subRes = await api('GET', '/stats/subject-distribution');
-    if (subRes.ok) {
-      const subData = subRes.data || [];
-      drawPieChart(subjectChart, subData.map(d => Math.round(d.total_minutes)), subData.map(d => d.subject), ['#00d4aa', '#00b894', '#f59e0b', '#f0566a', '#7c3aed', '#3b82f6', '#10d48e', '#ec4899']);
-    }
-    
-    const totalMin = values.reduce((a,b) => a+b, 0);
-    const totalLost = data.reduce((a,d) => a + Math.round(d.lost_minutes), 0);
-    document.getElementById('statsGrid').innerHTML = `
-      <div class="stat-card"><div class="label">Weekly Total</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div><div class="sub">${(totalMin/60).toFixed(1)} hours</div></div>
-      <div class="stat-card"><div class="label">Lost Time</div><div class="value" style="color:var(--red);">${totalLost}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
-      <div class="stat-card"><div class="label">Total Sessions</div><div class="value">${data.reduce((a,d) => a + d.session_count, 0)}</div></div>
-      <div class="stat-card"><div class="label">Avg/Day</div><div class="value">${Math.round(totalMin / Math.max(data.length, 1))}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>`;
-    
-    document.getElementById('detailTable').innerHTML = data.length ? `
-      <div class="table-wrap"><table>
-        <thead><tr><th>Date</th><th>Sessions</th><th>Completed</th><th>Minutes</th><th>Lost</th></tr></thead>
-        <tbody>${data.map(d => `<tr><td>${esc(d.study_date)}</td><td>${d.session_count}</td><td>${d.completed}</td><td>${Math.round(d.actual_minutes)}</td><td>${Math.round(d.lost_minutes)}</td></tr>`).join('')}</tbody>
-      </table></div>` : '<div class="empty-state"><p style="color:var(--gray);">No data this week</p></div>';
-    
-  } else if (currentPeriod === 'monthly') {
-    subjectDistSection.style.display = 'block';
-    document.getElementById('chartTitle').textContent = 'Monthly Study by Subject';
-    
-    const res = await api('GET', '/stats/monthly');
-    if (!res.ok) { showToast('Failed to load', 'error'); return; }
-    
-    const data = res.data.stats || [];
-    const labels = data.map(d => d.subject);
-    const values = data.map(d => Math.round(d.actual_minutes));
-    const colors = ['#00d4aa', '#00b894', '#f59e0b', '#f0566a', '#7c3aed', '#3b82f6', '#10d48e', '#ec4899'];
-    
-    drawBarChart(mainChart, values, labels, colors);
-    
-    const subRes = await api('GET', '/stats/subject-distribution');
-    if (subRes.ok) {
-      const subData = subRes.data || [];
-      drawPieChart(subjectChart, subData.map(d => Math.round(d.total_minutes)), subData.map(d => d.subject), colors);
-    }
-    
-    const totalMin = values.reduce((a,b) => a+b, 0);
-    document.getElementById('statsGrid').innerHTML = `
-      <div class="stat-card"><div class="label">Monthly Total</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div><div class="sub">${(totalMin/60).toFixed(1)} hours</div></div>
-      <div class="stat-card"><div class="label">Total Sessions</div><div class="value">${data.reduce((a,d) => a + d.session_count, 0)}</div></div>
-      <div class="stat-card"><div class="label">Subjects</div><div class="value">${data.length}</div></div>
-      <div class="stat-card"><div class="label">Top Subject</div><div class="value" style="font-size:18px;">${esc(data[0]?.subject || '-')}</div></div>`;
-    
-    document.getElementById('detailTable').innerHTML = data.length ? `
-      <div class="table-wrap"><table>
-        <thead><tr><th>Subject</th><th>Sessions</th><th>Completed</th><th>Minutes</th><th>Hours</th></tr></thead>
-        <tbody>${data.map(d => `<tr><td>${esc(d.subject)}</td><td>${d.session_count}</td><td>${d.completed}</td><td>${Math.round(d.actual_minutes)}</td><td>${(d.actual_minutes/60).toFixed(1)}</td></tr>`).join('')}</tbody>
-      </table></div>` : '<div class="empty-state"><p style="color:var(--gray);">No data this month</p></div>';
-    
-  } else if (currentPeriod === 'yearly') {
-    subjectDistSection.style.display = 'block';
-    document.getElementById('chartTitle').textContent = 'Yearly Study Trend';
-    
-    const res = await api('GET', '/sessions', { limit: 1000 });
-    if (!res.ok) { showToast('Failed to load', 'error'); return; }
-    
-    const sessions = res.data.sessions || [];
-    const monthlyData = {};
-    
-    sessions.forEach(s => {
-      if (s.actual_start && s.actual_end && s.study_date) {
-        const month = s.study_date.slice(0, 7);
-        const mins = Math.round((new Date(s.actual_end) - new Date(s.actual_start)) / 60000) - (s.lost_minutes || 0);
-        monthlyData[month] = (monthlyData[month] || 0) + Math.max(0, mins);
-      }
-    });
-    
-    const months = Object.keys(monthlyData).sort();
-    const values = months.map(m => monthlyData[m]);
-    
-    drawLineChart(mainChart, values, months.map(m => m.slice(5)));
-    
-    const subRes = await api('GET', '/stats/subject-distribution');
-    if (subRes.ok) {
-      const subData = subRes.data || [];
-      drawPieChart(subjectChart, subData.map(d => Math.round(d.total_minutes)), subData.map(d => d.subject), ['#00d4aa', '#00b894', '#f59e0b', '#f0566a', '#7c3aed', '#3b82f6', '#10d48e', '#ec4899']);
-    }
-    
-    const totalMin = values.reduce((a,b) => a+b, 0);
-    document.getElementById('statsGrid').innerHTML = `
-<script>
-// Auth Check
-const token = localStorage.getItem('timbr_token');
-const user = JSON.parse(localStorage.getItem('timbr_user') || 'null');
-if (!token || !user) { window.location.href = '/login.html'; }
-
-const API_BASE = '/api';
-let currentPeriod = 'daily';
-
-function esc(s) {
-  const d = document.createElement('div');
-  d.textContent = String(s || '');
-  return d.innerHTML;
-}
-
-function showToast(msg, type='success') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = `toast toast-${type} show`;
-  setTimeout(() => t.classList.remove('show'), 3500);
-}
-
-// FIXED: api() function - GET requests use query string
-async function api(method, path, body) {
-  try {
-    const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }};
-    
-    let url = API_BASE + path;
-    
-    if (method === 'GET' && body) {
-      const params = new URLSearchParams();
-      for (const [key, value] of Object.entries(body)) {
-        if (value !== undefined && value !== null && value !== '') {
-          params.append(key, String(value));
-        }
-      }
-      const qs = params.toString();
-      if (qs) url += '?' + qs;
-    } else if (body) {
-      opts.body = JSON.stringify(body);
-    }
-    
     const res = await fetch(url, opts);
     const data = await res.json();
     return { ok: res.ok, data, status: res.status };
   } catch(e) {
     console.error('API Error:', e);
-    return { ok: false, data: { error: 'Network error. Please try again.' }, status: 0 };
+    return { ok: false, data: { error: 'Network error' }, status: 0 };
   }
 }
 
@@ -958,7 +475,6 @@ document.getElementById('sidebarName').textContent = user.name || 'Student';
 document.getElementById('sidebarEmail').textContent = user.email || '';
 document.getElementById('profileAvatar').textContent = (user.name || 'S').charAt(0).toUpperCase();
 
-// Header scroll
 let lastScroll = 0;
 window.addEventListener('scroll', () => {
   const current = window.pageYOffset;
@@ -966,23 +482,19 @@ window.addEventListener('scroll', () => {
   lastScroll = current;
 });
 
-// Sidebar
 const sidebar = document.getElementById('sidebar');
 const overlay = document.getElementById('sidebarOverlay');
 document.getElementById('hamburgerBtn').addEventListener('click', () => {
-  sidebar.classList.toggle('open');
-  overlay.classList.toggle('show');
+  sidebar.classList.toggle('open'); overlay.classList.toggle('show');
 });
 overlay.addEventListener('click', () => { sidebar.classList.remove('open'); overlay.classList.remove('show'); });
 
-// Profile dropdown
 document.getElementById('profileBtn').addEventListener('click', (e) => {
   e.stopPropagation();
   document.getElementById('profileDropdown').classList.toggle('show');
 });
 document.addEventListener('click', () => document.getElementById('profileDropdown').classList.remove('show'));
 
-// Tabs
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -993,99 +505,95 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 // ============================================================
-// Simple Chart Drawing (Canvas-based, no library)
+// Canvas Chart Helpers
 // ============================================================
-function drawBarChart(canvas, data, labels, colors) {
+function clearCanvas(canvas) {
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
   canvas.width = rect.width * dpr;
-  canvas.height = 300 * dpr;
+  canvas.height = canvas.getAttribute('height') * dpr;
   ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, rect.width, parseInt(canvas.getAttribute('height')));
+  return { ctx, w: rect.width, h: parseInt(canvas.getAttribute('height')) };
+}
+
+function drawBarChart(canvas, data, labels) {
+  const { ctx, w, h } = clearCanvas(canvas);
+  if (data.length === 0) {
+    ctx.fillStyle = '#7a8899';
+    ctx.font = '14px "Cabinet Grotesk", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No data', w/2, h/2);
+    return;
+  }
   
-  const w = rect.width;
-  const h = 300;
-  const padding = { top: 30, right: 20, bottom: 50, left: 50 };
-  const chartW = w - padding.left - padding.right;
-  const chartH = h - padding.top - padding.bottom;
+  const pad = { top: 30, right: 20, bottom: 50, left: 55 };
+  const cw = w - pad.left - pad.right;
+  const ch = h - pad.top - pad.bottom;
+  const maxVal = Math.max(...data, 1);
+  const barW = Math.min(40, cw / data.length - 10);
   
-  ctx.clearRect(0, 0, w, h);
   ctx.fillStyle = '#0b0f1a';
   ctx.fillRect(0, 0, w, h);
   
-  const maxVal = Math.max(...data, 1);
-  const barWidth = Math.min(40, chartW / Math.max(data.length, 1) - 8);
-  
-  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-  ctx.lineWidth = 1;
+  // Grid
   for (let i = 0; i <= 4; i++) {
-    const y = padding.top + (chartH / 4) * i;
-    ctx.beginPath();
-    ctx.moveTo(padding.left, y);
-    ctx.lineTo(w - padding.right, y);
-    ctx.stroke();
-    
+    const y = pad.top + (ch / 4) * i;
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w - pad.right, y); ctx.stroke();
     ctx.fillStyle = '#7a8899';
     ctx.font = '11px "DM Mono", monospace';
     ctx.textAlign = 'right';
-    ctx.fillText(Math.round(maxVal - (maxVal / 4) * i), padding.left - 8, y + 4);
+    ctx.fillText(Math.round(maxVal - (maxVal / 4) * i), pad.left - 8, y + 4);
   }
   
+  // Bars
   data.forEach((val, i) => {
-    const barH = (val / maxVal) * chartH;
-    const x = padding.left + i * (chartW / Math.max(data.length, 1)) + (chartW / Math.max(data.length, 1) - barWidth) / 2;
-    const y = padding.top + chartH - barH;
+    const barH = Math.max((val / maxVal) * ch, 1);
+    const x = pad.left + i * (cw / data.length) + (cw / data.length - barW) / 2;
+    const y = pad.top + ch - barH;
     
-    ctx.fillStyle = colors[i % colors.length];
+    ctx.fillStyle = COLORS[i % COLORS.length];
     ctx.beginPath();
-    ctx.roundRect(x, y, barWidth, Math.max(barH, 1), [4, 4, 0, 0]);
+    if (ctx.roundRect) {
+      ctx.roundRect(x, y, barW, barH, [4, 4, 0, 0]);
+    } else {
+      ctx.fillRect(x, y, barW, barH);
+    }
     ctx.fill();
     
     ctx.fillStyle = '#a0adb8';
     ctx.font = '10px "Cabinet Grotesk", sans-serif';
     ctx.textAlign = 'center';
-    const label = labels[i] || '';
-    if (label.length > 8) {
-      ctx.fillText(label.slice(0, 8) + '..', x + barWidth / 2, h - padding.bottom + 18);
-    } else {
-      ctx.fillText(label, x + barWidth / 2, h - padding.bottom + 18);
-    }
+    const lbl = (labels[i] || '').length > 10 ? (labels[i] || '').slice(0, 9) + '…' : (labels[i] || '');
+    ctx.fillText(lbl, x + barW / 2, h - pad.bottom + 18);
   });
 }
 
-function drawPieChart(canvas, data, labels, colors) {
-  const ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width * dpr;
-  canvas.height = 250 * dpr;
-  ctx.scale(dpr, dpr);
-  
-  const w = rect.width;
-  const h = 250;
-  const cx = w / 2;
-  const cy = h / 2;
-  const radius = Math.min(w, h) / 2 - 60;
-  
-  ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = '#0b0f1a';
-  ctx.fillRect(0, 0, w, h);
-  
+function drawPieChart(canvas, data, labels) {
+  const { ctx, w, h } = clearCanvas(canvas);
   const total = data.reduce((a, b) => a + b, 0);
+  
   if (total === 0) {
     ctx.fillStyle = '#7a8899';
     ctx.font = '14px "Cabinet Grotesk", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('No data', cx, cy);
+    ctx.fillText('No data', w/2, h/2);
     return;
   }
   
+  const cx = w / 2, cy = h / 2;
+  const radius = Math.min(w, h) / 2 - 50;
   let startAngle = -Math.PI / 2;
+  
+  ctx.fillStyle = '#0b0f1a';
+  ctx.fillRect(0, 0, w, h);
   
   data.forEach((val, i) => {
     const sliceAngle = (val / total) * Math.PI * 2;
-    
-    ctx.fillStyle = colors[i % colors.length];
+    ctx.fillStyle = COLORS[i % COLORS.length];
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.arc(cx, cy, radius, startAngle, startAngle + sliceAngle);
@@ -1093,82 +601,73 @@ function drawPieChart(canvas, data, labels, colors) {
     ctx.fill();
     
     const midAngle = startAngle + sliceAngle / 2;
-    const labelX = cx + Math.cos(midAngle) * (radius + 30);
-    const labelY = cy + Math.sin(midAngle) * (radius + 30);
-    
+    const lx = cx + Math.cos(midAngle) * (radius + 35);
+    const ly = cy + Math.sin(midAngle) * (radius + 35);
     ctx.fillStyle = '#f0f4f8';
-    ctx.font = '11px "Cabinet Grotesk", sans-serif';
+    ctx.font = '10px "Cabinet Grotesk", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(labels[i] || '', labelX, labelY);
-    ctx.fillText(Math.round(val) + ' min', labelX, labelY + 14);
+    ctx.fillText(labels[i] || '', lx, ly);
+    ctx.fillText(Math.round(val) + 'm', lx, ly + 13);
     
     startAngle += sliceAngle;
   });
 }
 
 function drawLineChart(canvas, data, labels) {
-  const ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width * dpr;
-  canvas.height = 300 * dpr;
-  ctx.scale(dpr, dpr);
+  const { ctx, w, h } = clearCanvas(canvas);
   
-  const w = rect.width;
-  const h = 300;
-  const padding = { top: 30, right: 20, bottom: 50, left: 50 };
-  const chartW = w - padding.left - padding.right;
-  const chartH = h - padding.top - padding.bottom;
+  if (data.length === 0) {
+    ctx.fillStyle = '#7a8899';
+    ctx.font = '14px "Cabinet Grotesk", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No data', w/2, h/2);
+    return;
+  }
   
-  ctx.clearRect(0, 0, w, h);
+  const pad = { top: 30, right: 20, bottom: 50, left: 55 };
+  const cw = w - pad.left - pad.right;
+  const ch = h - pad.top - pad.bottom;
+  const maxVal = Math.max(...data, 1);
+  
   ctx.fillStyle = '#0b0f1a';
   ctx.fillRect(0, 0, w, h);
   
-  const maxVal = Math.max(...data, 1);
-  
-  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-  ctx.lineWidth = 1;
+  // Grid
   for (let i = 0; i <= 4; i++) {
-    const y = padding.top + (chartH / 4) * i;
-    ctx.beginPath();
-    ctx.moveTo(padding.left, y);
-    ctx.lineTo(w - padding.right, y);
-    ctx.stroke();
-    
+    const y = pad.top + (ch / 4) * i;
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w - pad.right, y); ctx.stroke();
     ctx.fillStyle = '#7a8899';
     ctx.font = '11px "DM Mono", monospace';
     ctx.textAlign = 'right';
-    ctx.fillText(Math.round(maxVal - (maxVal / 4) * i), padding.left - 8, y + 4);
+    ctx.fillText(Math.round(maxVal - (maxVal / 4) * i), pad.left - 8, y + 4);
   }
   
+  // Line
   if (data.length > 1) {
     ctx.strokeStyle = '#00d4aa';
     ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
     ctx.beginPath();
-    
     data.forEach((val, i) => {
-      const x = padding.left + (i / (data.length - 1)) * chartW;
-      const y = padding.top + chartH - (val / maxVal) * chartH;
-      
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+      const x = pad.left + (i / (data.length - 1)) * cw;
+      const y = pad.top + ch - (val / maxVal) * ch;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     });
     ctx.stroke();
   }
   
+  // Dots
   data.forEach((val, i) => {
-    const x = data.length > 1 ? padding.left + (i / (data.length - 1)) * chartW : padding.left + chartW / 2;
-    const y = padding.top + chartH - (val / maxVal) * chartH;
-    
+    const x = data.length > 1 ? pad.left + (i / (data.length - 1)) * cw : pad.left + cw / 2;
+    const y = pad.top + ch - (val / maxVal) * ch;
     ctx.fillStyle = '#00d4aa';
-    ctx.beginPath();
-    ctx.arc(x, y, 4, 0, Math.PI * 2);
-    ctx.fill();
-    
+    ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#a0adb8';
     ctx.font = '10px "Cabinet Grotesk", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(labels[i] || '', x, h - padding.bottom + 18);
+    ctx.fillText(labels[i] || '', x, h - pad.bottom + 18);
   });
 }
 
@@ -1181,7 +680,6 @@ async function loadStats() {
   const subjectDistSection = document.getElementById('subjectDistSection');
   const detailTable = document.getElementById('detailTable');
   
-  // Show skeletons
   document.getElementById('statsGrid').innerHTML = `
     <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
     <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
@@ -1189,282 +687,253 @@ async function loadStats() {
     <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>`;
   detailTable.innerHTML = '<div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text"></div>';
   
-  const colors = ['#00d4aa', '#00b894', '#f59e0b', '#f0566a', '#7c3aed', '#3b82f6', '#10d48e', '#ec4899'];
+  try {
+    if (currentPeriod === 'subjects') {
+      await loadSubjectsTab(mainChart, subjectChart, subjectDistSection, detailTable);
+    } else if (currentPeriod === 'daily') {
+      await loadDailyTab(mainChart, subjectChart, subjectDistSection, detailTable);
+    } else if (currentPeriod === 'weekly') {
+      await loadWeeklyTab(mainChart, subjectChart, subjectDistSection, detailTable);
+    } else if (currentPeriod === 'monthly') {
+      await loadMonthlyTab(mainChart, subjectChart, subjectDistSection, detailTable);
+    } else if (currentPeriod === 'yearly') {
+      await loadYearlyTab(mainChart, subjectChart, subjectDistSection, detailTable);
+    }
+  } catch (e) {
+    console.error('Stats error:', e);
+    showToast('Failed to load statistics', 'error');
+  }
+}
+
+// --- Subjects Tab ---
+async function loadSubjectsTab(mainChart, subjectChart, subjectDistSection, detailTable) {
+  document.getElementById('chartTitle').textContent = 'Study Time by Subject';
+  subjectDistSection.style.display = 'none';
   
-  // ============================================================
-  // SUBJECTS TAB
-  // ============================================================
-  if (currentPeriod === 'subjects') {
-    document.getElementById('chartTitle').textContent = 'Subject Distribution';
-    subjectDistSection.style.display = 'none';
-    
-    const res = await api('GET', '/stats/subject-distribution');
-    
-    if (!res.ok) {
-      showToast('Failed to load data', 'error');
-      return;
-    }
-    
-    const data = res.data || [];
-    
-    if (data.length === 0) {
-      document.getElementById('statsGrid').innerHTML = `
-        <div class="stat-card"><div class="label">Total Subjects</div><div class="value">0</div></div>
-        <div class="stat-card"><div class="label">Total Minutes</div><div class="value">0</div></div>`;
-      detailTable.innerHTML = '<div class="empty-state"><p style="color:var(--gray);">No study data yet. Complete some sessions to see statistics.</p></div>';
-      // Clear charts
-      const ctx1 = mainChart.getContext('2d');
-      ctx1.clearRect(0, 0, mainChart.width, mainChart.height);
-      return;
-    }
-    
+  const res = await api('GET', '/stats/subject-distribution');
+  if (!res.ok) { showToast('Failed to load', 'error'); return; }
+  
+  const data = res.data || [];
+  if (data.length === 0) {
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="label">Total Subjects</div><div class="value">0</div></div>
+      <div class="stat-card"><div class="label">Total Minutes</div><div class="value">0</div></div>`;
+    detailTable.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><h3>No data yet</h3><p>Complete study sessions to see statistics.</p></div>';
+    drawBarChart(mainChart, [], []);
+    drawPieChart(subjectChart, [], []);
+    return;
+  }
+  
+  const labels = data.map(d => d.subject);
+  const values = data.map(d => Math.round(d.total_minutes));
+  
+  drawBarChart(mainChart, values, labels);
+  drawPieChart(subjectChart, values, labels);
+  
+  const totalMin = values.reduce((a,b) => a+b, 0);
+  const totalSessions = data.reduce((a,b) => a + b.total_sessions, 0);
+  
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="label">Subjects</div><div class="value">${data.length}</div></div>
+    <div class="stat-card"><div class="label">Total Time</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div><div class="sub">${(totalMin/60).toFixed(1)} hours</div></div>
+    <div class="stat-card"><div class="label">Top Subject</div><div class="value" style="font-size:20px;">${esc(data[0]?.subject || '-')}</div></div>
+    <div class="stat-card"><div class="label">Sessions</div><div class="value">${totalSessions}</div></div>`;
+  
+  detailTable.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>Subject</th><th>Sessions</th><th>Minutes</th><th>Hours</th></tr></thead>
+    <tbody>${data.map(d => `<tr><td>${esc(d.subject)}</td><td>${d.total_sessions}</td><td>${Math.round(d.total_minutes)}</td><td>${(d.total_minutes/60).toFixed(1)}</td></tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+// --- Daily Tab ---
+async function loadDailyTab(mainChart, subjectChart, subjectDistSection, detailTable) {
+  document.getElementById('chartTitle').textContent = 'Daily Study Time';
+  subjectDistSection.style.display = 'block';
+  
+  const today = new Date().toISOString().split('T')[0];
+  const res = await api('GET', '/stats/daily', { date: today });
+  if (!res.ok) { showToast('Failed to load', 'error'); return; }
+  
+  const data = res.data.stats || [];
+  
+  if (data.length === 0) {
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="label">Today's Study</div><div class="value">0<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
+      <div class="stat-card"><div class="label">Sessions</div><div class="value">0</div></div>
+      <div class="stat-card"><div class="label">Lost Time</div><div class="value" style="color:var(--red);">0<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
+      <div class="stat-card"><div class="label">Completed</div><div class="value">0</div></div>`;
+    detailTable.innerHTML = '<div class="empty-state"><p style="color:var(--gray);">No sessions today.</p></div>';
+    drawBarChart(mainChart, [], []);
+  } else {
     const labels = data.map(d => d.subject);
-    const values = data.map(d => Math.round(d.total_minutes));
+    const values = data.map(d => Math.round(d.actual_minutes));
+    drawBarChart(mainChart, values, labels);
     
-    drawPieChart(subjectChart, values, labels, colors);
-    drawBarChart(mainChart, values, labels, colors);
+    const totalMin = values.reduce((a,b) => a+b, 0);
+    const totalLost = data.reduce((a,d) => a + Math.round(d.lost_minutes), 0);
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="label">Today's Study</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
+      <div class="stat-card"><div class="label">Lost Time</div><div class="value" style="color:var(--red);">${totalLost}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
+      <div class="stat-card"><div class="label">Sessions</div><div class="value">${data.length}</div></div>
+      <div class="stat-card"><div class="label">Completed</div><div class="value" style="color:var(--green);">${data.reduce((a,d) => a + d.completed, 0)}</div></div>`;
+    
+    detailTable.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr><th>Subject</th><th>Sessions</th><th>Completed</th><th>Partial</th><th>Missed</th><th>Min</th><th>Lost</th></tr></thead>
+      <tbody>${data.map(d => `<tr><td>${esc(d.subject)}</td><td>${d.session_count}</td><td>${d.completed}</td><td>${d.partial}</td><td>${d.missed}</td><td>${Math.round(d.actual_minutes)}</td><td>${Math.round(d.lost_minutes)}</td></tr>`).join('')}</tbody>
+    </table></div>`;
+  }
+  
+  // Subject pie
+  const subRes = await api('GET', '/stats/subject-distribution');
+  if (subRes.ok && subRes.data?.length) {
+    drawPieChart(subjectChart, subRes.data.map(d => Math.round(d.total_minutes)), subRes.data.map(d => d.subject));
+  } else {
+    drawPieChart(subjectChart, [], []);
+  }
+}
+
+// --- Weekly Tab ---
+async function loadWeeklyTab(mainChart, subjectChart, subjectDistSection, detailTable) {
+  document.getElementById('chartTitle').textContent = 'Weekly Study Time';
+  subjectDistSection.style.display = 'block';
+  
+  const res = await api('GET', '/stats/weekly');
+  if (!res.ok) { showToast('Failed to load', 'error'); return; }
+  
+  const data = res.data.stats || [];
+  
+  if (data.length === 0) {
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="label">Weekly Total</div><div class="value">0<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
+      <div class="stat-card"><div class="label">Sessions</div><div class="value">0</div></div>
+      <div class="stat-card"><div class="label">Avg/Day</div><div class="value">0<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
+      <div class="stat-card"><div class="label">Lost Time</div><div class="value" style="color:var(--red);">0</div></div>`;
+    detailTable.innerHTML = '<div class="empty-state"><p style="color:var(--gray);">No study data this week.</p></div>';
+    drawBarChart(mainChart, [], []);
+  } else {
+    const labels = data.map(d => (d.study_date || '').slice(5));
+    const values = data.map(d => Math.round(d.actual_minutes));
+    drawBarChart(mainChart, values, labels);
+    
+    const totalMin = values.reduce((a,b) => a+b, 0);
+    const totalLost = data.reduce((a,d) => a + Math.round(d.lost_minutes), 0);
+    const totalSessions = data.reduce((a,d) => a + d.session_count, 0);
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="label">Weekly Total</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div><div class="sub">${(totalMin/60).toFixed(1)} hours</div></div>
+      <div class="stat-card"><div class="label">Lost Time</div><div class="value" style="color:var(--red);">${totalLost}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
+      <div class="stat-card"><div class="label">Sessions</div><div class="value">${totalSessions}</div></div>
+      <div class="stat-card"><div class="label">Avg/Day</div><div class="value">${Math.round(totalMin / Math.max(data.length, 1))}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>`;
+    
+    detailTable.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr><th>Date</th><th>Sessions</th><th>Completed</th><th>Minutes</th><th>Lost</th></tr></thead>
+      <tbody>${data.map(d => `<tr><td>${esc(d.study_date)}</td><td>${d.session_count}</td><td>${d.completed}</td><td>${Math.round(d.actual_minutes)}</td><td>${Math.round(d.lost_minutes)}</td></tr>`).join('')}</tbody>
+    </table></div>`;
+  }
+  
+  const subRes = await api('GET', '/stats/subject-distribution');
+  if (subRes.ok && subRes.data?.length) {
+    drawPieChart(subjectChart, subRes.data.map(d => Math.round(d.total_minutes)), subRes.data.map(d => d.subject));
+  } else {
+    drawPieChart(subjectChart, [], []);
+  }
+}
+
+// --- Monthly Tab ---
+async function loadMonthlyTab(mainChart, subjectChart, subjectDistSection, detailTable) {
+  document.getElementById('chartTitle').textContent = 'Monthly Study by Subject';
+  subjectDistSection.style.display = 'block';
+  
+  const res = await api('GET', '/stats/monthly');
+  if (!res.ok) { showToast('Failed to load', 'error'); return; }
+  
+  const data = res.data.stats || [];
+  
+  if (data.length === 0) {
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="label">Monthly Total</div><div class="value">0<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
+      <div class="stat-card"><div class="label">Subjects</div><div class="value">0</div></div>
+      <div class="stat-card"><div class="label">Sessions</div><div class="value">0</div></div>
+      <div class="stat-card"><div class="label">Top Subject</div><div class="value" style="font-size:18px;">-</div></div>`;
+    detailTable.innerHTML = '<div class="empty-state"><p style="color:var(--gray);">No study data this month.</p></div>';
+    drawBarChart(mainChart, [], []);
+  } else {
+    const labels = data.map(d => d.subject);
+    const values = data.map(d => Math.round(d.actual_minutes));
+    drawBarChart(mainChart, values, labels);
+    
+    const totalMin = values.reduce((a,b) => a+b, 0);
+    const totalSessions = data.reduce((a,d) => a + d.session_count, 0);
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="label">Monthly Total</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div><div class="sub">${(totalMin/60).toFixed(1)} hours</div></div>
+      <div class="stat-card"><div class="label">Sessions</div><div class="value">${totalSessions}</div></div>
+      <div class="stat-card"><div class="label">Subjects</div><div class="value">${data.length}</div></div>
+      <div class="stat-card"><div class="label">Top Subject</div><div class="value" style="font-size:18px;">${esc(data[0]?.subject || '-')}</div></div>`;
+    
+    detailTable.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr><th>Subject</th><th>Sessions</th><th>Completed</th><th>Minutes</th><th>Hours</th></tr></thead>
+      <tbody>${data.map(d => `<tr><td>${esc(d.subject)}</td><td>${d.session_count}</td><td>${d.completed}</td><td>${Math.round(d.actual_minutes)}</td><td>${(d.actual_minutes/60).toFixed(1)}</td></tr>`).join('')}</tbody>
+    </table></div>`;
+  }
+  
+  const subRes = await api('GET', '/stats/subject-distribution');
+  if (subRes.ok && subRes.data?.length) {
+    drawPieChart(subjectChart, subRes.data.map(d => Math.round(d.total_minutes)), subRes.data.map(d => d.subject));
+  } else {
+    drawPieChart(subjectChart, [], []);
+  }
+}
+
+// --- Yearly Tab ---
+async function loadYearlyTab(mainChart, subjectChart, subjectDistSection, detailTable) {
+  document.getElementById('chartTitle').textContent = 'Yearly Study Trend';
+  subjectDistSection.style.display = 'block';
+  
+  const res = await api('GET', '/sessions', { limit: '1000', page: '1' });
+  if (!res.ok) { showToast('Failed to load', 'error'); return; }
+  
+  const sessions = res.data.sessions || [];
+  
+  if (sessions.length === 0) {
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="label">Yearly Total</div><div class="value">0<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
+      <div class="stat-card"><div class="label">Active Months</div><div class="value">0</div></div>
+      <div class="stat-card"><div class="label">Avg/Month</div><div class="value">0</div></div>
+      <div class="stat-card"><div class="label">Sessions</div><div class="value">0</div></div>`;
+    detailTable.innerHTML = '<div class="empty-state"><p style="color:var(--gray);">No study data this year.</p></div>';
+    drawLineChart(mainChart, [], []);
+  } else {
+    const monthlyData = {};
+    sessions.forEach(s => {
+      if (s.actual_start && s.actual_end && s.study_date) {
+        const month = s.study_date.slice(0, 7);
+        const mins = Math.round((new Date(s.actual_end) - new Date(s.actual_start)) / 60000) - (s.lost_minutes || 0);
+        if (mins > 0) monthlyData[month] = (monthlyData[month] || 0) + mins;
+      }
+    });
+    
+    const months = Object.keys(monthlyData).sort();
+    const values = months.map(m => monthlyData[m]);
+    
+    drawLineChart(mainChart, values, months.map(m => m.slice(5)));
     
     const totalMin = values.reduce((a,b) => a+b, 0);
     document.getElementById('statsGrid').innerHTML = `
-      <div class="stat-card"><div class="label">Total Subjects</div><div class="value">${data.length}</div></div>
-      <div class="stat-card"><div class="label">Total Minutes</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
-      <div class="stat-card"><div class="label">Top Subject</div><div class="value" style="font-size:18px;">${esc(data[0]?.subject || '-')}</div></div>
-      <div class="stat-card"><div class="label">Total Sessions</div><div class="value">${data.reduce((a,b) => a + b.total_sessions, 0)}</div></div>`;
+      <div class="stat-card"><div class="label">Yearly Total</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div><div class="sub">${(totalMin/60).toFixed(1)} hours</div></div>
+      <div class="stat-card"><div class="label">Active Months</div><div class="value">${months.length}</div></div>
+      <div class="stat-card"><div class="label">Avg/Month</div><div class="value">${Math.round(totalMin / Math.max(months.length, 1))}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
+      <div class="stat-card"><div class="label">Sessions</div><div class="value">${sessions.length}</div></div>`;
     
-    detailTable.innerHTML = `
-      <div class="table-wrap"><table>
-        <thead><tr><th>Subject</th><th>Sessions</th><th>Total Minutes</th><th>Hours</th></tr></thead>
-        <tbody>${data.map(d => `<tr><td>${esc(d.subject)}</td><td>${d.total_sessions}</td><td>${Math.round(d.total_minutes)}</td><td>${(d.total_minutes / 60).toFixed(1)}</td></tr>`).join('')}</tbody>
-      </table></div>`;
+    detailTable.innerHTML = months.length ? `<div class="table-wrap"><table>
+      <thead><tr><th>Month</th><th>Minutes</th><th>Hours</th></tr></thead>
+      <tbody>${months.map(m => `<tr><td>${esc(m)}</td><td>${monthlyData[m]}</td><td>${(monthlyData[m]/60).toFixed(1)}</td></tr>`).join('')}</tbody>
+    </table></div>` : '<div class="empty-state"><p style="color:var(--gray);">No completed sessions with time data.</p></div>';
   }
   
-  // ============================================================
-  // DAILY TAB
-  // ============================================================
-  else if (currentPeriod === 'daily') {
-    subjectDistSection.style.display = 'block';
-    document.getElementById('chartTitle').textContent = 'Daily Study Time';
-    
-    const today = new Date().toISOString().split('T')[0];
-    const res = await api('GET', '/stats/daily', { date: today });
-    
-    if (!res.ok) {
-      showToast('Failed to load data', 'error');
-      return;
-    }
-    
-    const data = res.data.stats || [];
-    
-    if (data.length === 0) {
-      document.getElementById('statsGrid').innerHTML = `
-        <div class="stat-card"><div class="label">Today's Study</div><div class="value">0<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
-        <div class="stat-card"><div class="label">Sessions</div><div class="value">0</div></div>`;
-      detailTable.innerHTML = '<div class="empty-state"><p style="color:var(--gray);">No sessions today. Start studying!</p></div>';
-      const ctx1 = mainChart.getContext('2d');
-      ctx1.clearRect(0, 0, mainChart.width, mainChart.height);
-    } else {
-      const labels = data.map(d => d.subject);
-      const actualMins = data.map(d => Math.round(d.actual_minutes));
-      
-      drawBarChart(mainChart, actualMins, labels, colors);
-      
-      const totalMin = actualMins.reduce((a,b) => a+b, 0);
-      const totalLost = data.reduce((a,d) => a + Math.round(d.lost_minutes), 0);
-      document.getElementById('statsGrid').innerHTML = `
-        <div class="stat-card"><div class="label">Today's Study</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
-        <div class="stat-card"><div class="label">Lost Time</div><div class="value" style="color:var(--red);">${totalLost}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
-        <div class="stat-card"><div class="label">Sessions</div><div class="value">${data.length}</div></div>
-        <div class="stat-card"><div class="label">Completed</div><div class="value">${data.reduce((a,d) => a + d.completed, 0)}</div></div>`;
-      
-      detailTable.innerHTML = `
-        <div class="table-wrap"><table>
-          <thead><tr><th>Subject</th><th>Sessions</th><th>Completed</th><th>Partial</th><th>Missed</th><th>Minutes</th><th>Lost</th></tr></thead>
-          <tbody>${data.map(d => `<tr><td>${esc(d.subject)}</td><td>${d.session_count}</td><td>${d.completed}</td><td>${d.partial}</td><td>${d.missed}</td><td>${Math.round(d.actual_minutes)}</td><td>${Math.round(d.lost_minutes)}</td></tr>`).join('')}</tbody>
-        </table></div>`;
-    }
-    
-    // Subject distribution pie chart
-    const subRes = await api('GET', '/stats/subject-distribution');
-    if (subRes.ok && subRes.data && subRes.data.length > 0) {
-      const subData = subRes.data;
-      drawPieChart(subjectChart, subData.map(d => Math.round(d.total_minutes)), subData.map(d => d.subject), colors);
-    } else {
-      const ctx2 = subjectChart.getContext('2d');
-      ctx2.clearRect(0, 0, subjectChart.width, subjectChart.height);
-    }
-  }
-  
-  // ============================================================
-  // WEEKLY TAB
-  // ============================================================
-  else if (currentPeriod === 'weekly') {
-    subjectDistSection.style.display = 'block';
-    document.getElementById('chartTitle').textContent = 'Weekly Study Time';
-    
-    const res = await api('GET', '/stats/weekly');
-    
-    if (!res.ok) {
-      showToast('Failed to load data', 'error');
-      return;
-    }
-    
-    const data = res.data.stats || [];
-    
-    if (data.length === 0) {
-      document.getElementById('statsGrid').innerHTML = `
-        <div class="stat-card"><div class="label">Weekly Total</div><div class="value">0<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
-        <div class="stat-card"><div class="label">Sessions</div><div class="value">0</div></div>`;
-      detailTable.innerHTML = '<div class="empty-state"><p style="color:var(--gray);">No study data this week.</p></div>';
-      const ctx1 = mainChart.getContext('2d');
-      ctx1.clearRect(0, 0, mainChart.width, mainChart.height);
-    } else {
-      const labels = data.map(d => d.study_date ? d.study_date.slice(5) : '');
-      const values = data.map(d => Math.round(d.actual_minutes));
-      
-      drawBarChart(mainChart, values, labels, colors);
-      
-      const totalMin = values.reduce((a,b) => a+b, 0);
-      const totalLost = data.reduce((a,d) => a + Math.round(d.lost_minutes), 0);
-      document.getElementById('statsGrid').innerHTML = `
-        <div class="stat-card"><div class="label">Weekly Total</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div><div class="sub">${(totalMin/60).toFixed(1)} hours</div></div>
-        <div class="stat-card"><div class="label">Lost Time</div><div class="value" style="color:var(--red);">${totalLost}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
-        <div class="stat-card"><div class="label">Total Sessions</div><div class="value">${data.reduce((a,d) => a + d.session_count, 0)}</div></div>
-        <div class="stat-card"><div class="label">Avg/Day</div><div class="value">${Math.round(totalMin / Math.max(data.length, 1))}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>`;
-      
-      detailTable.innerHTML = `
-        <div class="table-wrap"><table>
-          <thead><tr><th>Date</th><th>Sessions</th><th>Completed</th><th>Minutes</th><th>Lost</th></tr></thead>
-          <tbody>${data.map(d => `<tr><td>${esc(d.study_date)}</td><td>${d.session_count}</td><td>${d.completed}</td><td>${Math.round(d.actual_minutes)}</td><td>${Math.round(d.lost_minutes)}</td></tr>`).join('')}</tbody>
-        </table></div>`;
-    }
-    
-    // Subject distribution
-    const subRes = await api('GET', '/stats/subject-distribution');
-    if (subRes.ok && subRes.data && subRes.data.length > 0) {
-      drawPieChart(subjectChart, subRes.data.map(d => Math.round(d.total_minutes)), subRes.data.map(d => d.subject), colors);
-    } else {
-      const ctx2 = subjectChart.getContext('2d');
-      ctx2.clearRect(0, 0, subjectChart.width, subjectChart.height);
-    }
-  }
-  
-  // ============================================================
-  // MONTHLY TAB
-  // ============================================================
-  else if (currentPeriod === 'monthly') {
-    subjectDistSection.style.display = 'block';
-    document.getElementById('chartTitle').textContent = 'Monthly Study by Subject';
-    
-    const res = await api('GET', '/stats/monthly');
-    
-    if (!res.ok) {
-      showToast('Failed to load data', 'error');
-      return;
-    }
-    
-    const data = res.data.stats || [];
-    
-    if (data.length === 0) {
-      document.getElementById('statsGrid').innerHTML = `
-        <div class="stat-card"><div class="label">Monthly Total</div><div class="value">0<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
-        <div class="stat-card"><div class="label">Subjects</div><div class="value">0</div></div>`;
-      detailTable.innerHTML = '<div class="empty-state"><p style="color:var(--gray);">No study data this month.</p></div>';
-      const ctx1 = mainChart.getContext('2d');
-      ctx1.clearRect(0, 0, mainChart.width, mainChart.height);
-    } else {
-      const labels = data.map(d => d.subject);
-      const values = data.map(d => Math.round(d.actual_minutes));
-      
-      drawBarChart(mainChart, values, labels, colors);
-      
-      const totalMin = values.reduce((a,b) => a+b, 0);
-      document.getElementById('statsGrid').innerHTML = `
-        <div class="stat-card"><div class="label">Monthly Total</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div><div class="sub">${(totalMin/60).toFixed(1)} hours</div></div>
-        <div class="stat-card"><div class="label">Total Sessions</div><div class="value">${data.reduce((a,d) => a + d.session_count, 0)}</div></div>
-        <div class="stat-card"><div class="label">Subjects</div><div class="value">${data.length}</div></div>
-        <div class="stat-card"><div class="label">Top Subject</div><div class="value" style="font-size:18px;">${esc(data[0]?.subject || '-')}</div></div>`;
-      
-      detailTable.innerHTML = `
-        <div class="table-wrap"><table>
-          <thead><tr><th>Subject</th><th>Sessions</th><th>Completed</th><th>Minutes</th><th>Hours</th></tr></thead>
-          <tbody>${data.map(d => `<tr><td>${esc(d.subject)}</td><td>${d.session_count}</td><td>${d.completed}</td><td>${Math.round(d.actual_minutes)}</td><td>${(d.actual_minutes/60).toFixed(1)}</td></tr>`).join('')}</tbody>
-        </table></div>`;
-    }
-    
-    // Subject distribution
-    const subRes = await api('GET', '/stats/subject-distribution');
-    if (subRes.ok && subRes.data && subRes.data.length > 0) {
-      drawPieChart(subjectChart, subRes.data.map(d => Math.round(d.total_minutes)), subRes.data.map(d => d.subject), colors);
-    } else {
-      const ctx2 = subjectChart.getContext('2d');
-      ctx2.clearRect(0, 0, subjectChart.width, subjectChart.height);
-    }
-  }
-  
-  // ============================================================
-  // YEARLY TAB
-  // ============================================================
-  else if (currentPeriod === 'yearly') {
-    subjectDistSection.style.display = 'block';
-    document.getElementById('chartTitle').textContent = 'Yearly Study Trend';
-    
-    // Get all sessions
-    const res = await api('GET', '/sessions', { limit: '1000', page: '1' });
-    
-    if (!res.ok) {
-      showToast('Failed to load data', 'error');
-      return;
-    }
-    
-    const sessions = res.data.sessions || [];
-    
-    if (sessions.length === 0) {
-      document.getElementById('statsGrid').innerHTML = `
-        <div class="stat-card"><div class="label">Yearly Total</div><div class="value">0<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
-        <div class="stat-card"><div class="label">Total Sessions</div><div class="value">0</div></div>`;
-      detailTable.innerHTML = '<div class="empty-state"><p style="color:var(--gray);">No study data this year.</p></div>';
-      const ctx1 = mainChart.getContext('2d');
-      ctx1.clearRect(0, 0, mainChart.width, mainChart.height);
-    } else {
-      const monthlyData = {};
-      
-      sessions.forEach(s => {
-        if (s.actual_start && s.actual_end && s.study_date) {
-          const month = s.study_date.slice(0, 7);
-          const mins = Math.round((new Date(s.actual_end) - new Date(s.actual_start)) / 60000) - (s.lost_minutes || 0);
-          monthlyData[month] = (monthlyData[month] || 0) + Math.max(0, mins);
-        }
-      });
-      
-      const months = Object.keys(monthlyData).sort();
-      const values = months.map(m => monthlyData[m]);
-      
-      if (values.length > 0) {
-        drawLineChart(mainChart, values, months.map(m => m.slice(5)));
-      }
-      
-      const totalMin = values.reduce((a,b) => a+b, 0);
-      document.getElementById('statsGrid').innerHTML = `
-        <div class="stat-card"><div class="label">Yearly Total</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div><div class="sub">${(totalMin/60).toFixed(1)} hours</div></div>
-        <div class="stat-card"><div class="label">Active Months</div><div class="value">${months.length}</div></div>
-        <div class="stat-card"><div class="label">Avg/Month</div><div class="value">${Math.round(totalMin / Math.max(months.length, 1))}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
-        <div class="stat-card"><div class="label">Total Sessions</div><div class="value">${sessions.length}</div></div>`;
-      
-      detailTable.innerHTML = months.length ? `
-        <div class="table-wrap"><table>
-          <thead><tr><th>Month</th><th>Minutes</th><th>Hours</th></tr></thead>
-          <tbody>${months.map(m => `<tr><td>${esc(m)}</td><td>${monthlyData[m]}</td><td>${(monthlyData[m]/60).toFixed(1)}</td></tr>`).join('')}</tbody>
-        </table></div>` : '<div class="empty-state"><p style="color:var(--gray);">No completed sessions with time data.</p></div>';
-    }
-    
-    // Subject distribution
-    const subRes = await api('GET', '/stats/subject-distribution');
-    if (subRes.ok && subRes.data && subRes.data.length > 0) {
-      drawPieChart(subjectChart, subRes.data.map(d => Math.round(d.total_minutes)), subRes.data.map(d => d.subject), colors);
-    } else {
-      const ctx2 = subjectChart.getContext('2d');
-      ctx2.clearRect(0, 0, subjectChart.width, subjectChart.height);
-    }
+  const subRes = await api('GET', '/stats/subject-distribution');
+  if (subRes.ok && subRes.data?.length) {
+    drawPieChart(subjectChart, subRes.data.map(d => Math.round(d.total_minutes)), subRes.data.map(d => d.subject));
+  } else {
+    drawPieChart(subjectChart, [], []);
   }
 }
 
@@ -1487,7 +956,11 @@ loadStats();
 loadNotifBadge();
 setInterval(loadNotifBadge, 60000);
 
-window.addEventListener('resize', () => { loadStats(); });
+let resizeTimeout;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => loadStats(), 300);
+});
 </script>
 </body>
 </html>
