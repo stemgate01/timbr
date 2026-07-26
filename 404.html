@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Page Not Found — Timbr</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700&family=DM+Mono&family=Cabinet+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #05080f;
+  --surface: #0b0f1a;
+  --surface2: #111827;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.11);
+  --accent: #00d4aa;
+  --accent2: #00b894;
+  --white: #f0f4f8;
+  --gray: #7a8899;
+  --gray2: #a0adb8;
+  --radius: 9px;
+  --radius-lg: 13px;
+  --transition: .18s cubic-bezier(.4,0,.2,1);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Cabinet Grotesk', sans-serif;
+  background: var(--bg);
+  color: var(--white);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+}
+h1, h2 { font-family: 'Cormorant Garamond', serif; }
+a { color: var(--accent); text-decoration: none; }
+
+.logo { margin-bottom: 40px; }
+.logo img { height: 40px; }
+
+.error-code {
+  font-family: 'DM Mono', monospace;
+  font-size: 120px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 8px;
+  opacity: 0.8;
+}
+.error-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.error-message {
+  color: var(--gray);
+  font-size: 16px;
+  max-width: 400px;
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: var(--radius);
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition);
+  text-decoration: none;
+}
+.btn-primary {
+  background: var(--accent);
+  color: #05080f;
+}
+.btn-primary:hover { background: var(--accent2); }
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--white);
+}
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.footer-note {
+  position: fixed;
+  bottom: 24px;
+  color: var(--gray);
+  font-size: 12px;
+}
+
+@media (max-width: 600px) {
+  .error-code { font-size: 80px; }
+  .error-title { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+
+<div class="logo">
+  <img src="/images/timbr.png" height="40" alt="Timbr">
+</div>
+
+<div class="error-code">404</div>
+<h1 class="error-title">Page Not Found</h1>
+<p class="error-message">
+  The page you're looking for doesn't exist or has been moved. 
+  Let's get you back on track.
+</p>
+
+<div class="actions">
+  <a href="/dashboard.html" class="btn btn-primary">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    Go to Dashboard
+  </a>
+  <a href="/index.html" class="btn btn-outline">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+    Home
+  </a>
+</div>
+
+<div class="footer-note">&copy; 2024 Timbr. All rights reserved.</div>
+
+</body>
+</html>
