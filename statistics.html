@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Statistics — Timbr</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700&family=DM+Mono&family=Cabinet+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #05080f;
+  --surface: #0b0f1a;
+  --surface2: #111827;
+  --surface3: #161e2e;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.11);
+  --accent: #00d4aa;
+  --accent2: #00b894;
+  --accent-dim: rgba(0,212,170,0.08);
+  --white: #f0f4f8;
+  --gray: #7a8899;
+  --gray2: #a0adb8;
+  --red: #f0566a;
+  --red-dim: rgba(240,86,106,0.09);
+  --green: #10d48e;
+  --green-dim: rgba(16,212,142,0.09);
+  --orange: #f59e0b;
+  --orange-dim: rgba(245,158,11,0.09);
+  --radius: 9px;
+  --radius-lg: 13px;
+  --transition: .18s cubic-bezier(.4,0,.2,1);
+  --header-h: 64px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Cabinet Grotesk', sans-serif;
+  background: var(--bg);
+  color: var(--white);
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+h1, h2, h3, h4 { font-family: 'Cormorant Garamond', serif; }
+a { color: var(--accent); text-decoration: none; }
+
+/* Header */
+.header {
+  position: fixed; top:0; left:0; right:0;
+  height: var(--header-h);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 0 24px; z-index: 100;
+  transition: transform .3s ease;
+}
+.header.hidden { transform: translateY(-100%); }
+.header-left { display: flex; align-items: center; gap: 16px; }
+.hamburger {
+  background: none; border: none; cursor: pointer;
+  padding: 8px; display: flex; align-items: center;
+  color: var(--gray2);
+}
+.hamburger:hover { color: var(--white); }
+.logo { display: flex; align-items: center; gap: 8px; }
+.logo img { height: 28px; }
+.logo span { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 700; }
+.header-right { display: flex; align-items: center; gap: 16px; }
+.notif-btn {
+  background: none; border: none; cursor: pointer;
+  padding: 8px; color: var(--gray2); position: relative;
+}
+.notif-btn:hover { color: var(--white); }
+.notif-badge {
+  position: absolute; top:2px; right:2px;
+  background: var(--red); color: #fff;
+  font-size: 10px; font-weight: 700;
+  min-width: 18px; height: 18px;
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  display: none;
+}
+.notif-badge.show { display: flex; }
+.profile-btn {
+  display: flex; align-items: center; gap: 8px;
+  background: none; border: none; cursor: pointer;
+  color: var(--gray2); padding: 6px 10px;
+  border-radius: var(--radius);
+  transition: background var(--transition);
+}
+.profile-btn:hover { background: var(--surface2); color: var(--white); }
+.profile-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px;
+  color: var(--accent);
+}
+.profile-dropdown {
+  position: absolute; top:60px; right:20px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  padding: 8px; min-width: 200px;
+  display: none; z-index: 200;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+.profile-dropdown.show { display: block; }
+.profile-dropdown a, .profile-dropdown button {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 10px 14px;
+  border-radius: var(--radius);
+  color: var(--gray2); font-size: 14px;
+  background: none; border: none; cursor: pointer;
+  font-family: 'Cabinet Grotesk', sans-serif;
+  text-align: left;
+  transition: all var(--transition);
+}
+.profile-dropdown a:hover, .profile-dropdown button:hover {
+  background: var(--surface2); color: var(--white);
+}
+.profile-dropdown .divider { height: 1px; background: var(--border); margin: 6px 0; }
+
+/* Sidebar */
+.sidebar-overlay {
+  position: fixed; inset:0;
+  background: rgba(0,0,0,0.5);
+  z-index: 150; display: none;
+}
+.sidebar-overlay.show { display: block; }
+.sidebar {
+  position: fixed; top:0; left:-280px;
+  width: 260px; height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  z-index: 160;
+  transition: left .25s ease;
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+}
+.sidebar.open { left: 0; }
+.sidebar-header {
+  padding: 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+}
+.sidebar-user {
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+}
+.sidebar-user .name { font-weight: 600; font-size: 15px; }
+.sidebar-user .email { font-size: 12px; color: var(--gray); }
+.sidebar-nav { flex:1; padding: 12px; }
+.sidebar-nav a {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border-radius: var(--radius);
+  color: var(--gray2); font-size: 14px; font-weight: 500;
+  transition: all var(--transition); margin-bottom: 2px;
+}
+.sidebar-nav a:hover, .sidebar-nav a.active {
+  background: var(--accent-dim); color: var(--accent);
+}
+.sidebar-nav a svg { width: 20px; height: 20px; flex-shrink: 0; }
+.sidebar-footer { padding: 12px 20px; border-top: 1px solid var(--border); }
+
+/* Main */
+.main-content {
+  margin-left: 0;
+  margin-top: var(--header-h);
+  padding: 32px 24px;
+  flex: 1;
+}
+.page-title { font-size: 28px; margin-bottom: 8px; }
+
+/* Tabs */
+.tabs {
+  display: flex; gap: 4px; flex-wrap: wrap;
+  margin-bottom: 24px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 4px;
+  width: fit-content;
+}
+.tab-btn {
+  padding: 8px 18px; border-radius: 6px;
+  font-size: 13px; font-weight: 500;
+  background: transparent; border: none;
+  color: var(--gray2); cursor: pointer;
+  font-family: 'Cabinet Grotesk', sans-serif;
+  transition: all var(--transition);
+}
+.tab-btn:hover { color: var(--white); }
+.tab-btn.active {
+  background: var(--accent);
+  color: #05080f;
+}
+
+/* Stats Cards */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+.stat-card .label {
+  font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.5px; color: var(--gray);
+  margin-bottom: 4px;
+}
+.stat-card .value {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px; font-weight: 700;
+  color: var(--accent);
+}
+.stat-card .sub {
+  font-size: 11px; color: var(--gray);
+  margin-top: 2px;
+}
+
+/* Chart Container */
+.chart-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.chart-section h3 { font-size: 18px; margin-bottom: 16px; }
+.chart-wrap {
+  position: relative;
+  width: 100%;
+  overflow-x: auto;
+}
+canvas { width: 100%; max-width: 100%; }
+
+/* Table */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th {
+  text-align: left; padding: 10px 12px;
+  font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.5px; color: var(--gray);
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+}
+td {
+  padding: 10px 12px; font-size: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Skeleton */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface2) 25%, var(--surface3) 50%, var(--surface2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius);
+}
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.skeleton-text { height: 14px; margin-bottom: 8px; width: 80%; }
+.skeleton-box { height: 200px; width: 100%; }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  padding: 12px 20px; border-radius: var(--radius);
+  font-size: 14px; font-weight: 500; z-index: 300;
+  opacity: 0; transform: translateY(10px);
+  transition: all .3s ease; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast-success { background: var(--green); color: #000; }
+.toast-error { background: var(--red); color: #fff; }
+
+/* Empty */
+.empty-state {
+  text-align: center; padding: 40px 20px;
+}
+.empty-state svg { width: 48px; height: 48px; color: var(--gray); margin-bottom: 16px; }
+.empty-state h3 { color: var(--gray2); margin-bottom: 8px; }
+.empty-state p { color: var(--gray); font-size: 14px; }
+
+/* Footer */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 40px 24px; margin-top: auto;
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px; max-width: 1000px; margin: 0 auto;
+}
+.footer-col h4 {
+  font-size: 14px; margin-bottom: 12px;
+  color: var(--gray2); font-family: 'Cabinet Grotesk', sans-serif;
+  font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.footer-col a {
+  display: block; color: var(--gray);
+  font-size: 13px; margin-bottom: 6px;
+  transition: color var(--transition);
+}
+.footer-col a:hover { color: var(--white); }
+.footer-bottom {
+  text-align: center; padding-top: 24px;
+  margin-top: 24px; border-top: 1px solid var(--border);
+  color: var(--gray); font-size: 12px;
+  max-width: 1000px; margin-left: auto; margin-right: auto;
+}
+
+@media (max-width: 860px) {
+  .footer-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .footer-grid { grid-template-columns: 1fr; }
+  .main-content { padding: 20px 16px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header" id="header">
+  <div class="header-left">
+    <button class="hamburger" id="hamburgerBtn" aria-label="Menu">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <a href="/dashboard.html" class="logo">
+      <img src="/images/timbr.png" height="28" alt="Timbr">
+      <span>Timbr</span>
+    </a>
+  </div>
+  <div class="header-right">
+    <button class="notif-btn" onclick="window.location.href='/notifications.html'">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span class="notif-badge" id="notifBadge">0</span>
+    </button>
+    <div style="position:relative;">
+      <button class="profile-btn" id="profileBtn">
+        <div class="profile-avatar" id="profileAvatar">S</div>
+        <span id="profileName">Student</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="profile-dropdown" id="profileDropdown">
+        <a href="/profile.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile</a>
+        <a href="/notifications.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>Notifications</a>
+        <div class="divider"></div>
+        <button onclick="logout()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign Out</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Sidebar Overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <img src="/images/timbr.png" height="24" alt="Timbr">
+    <span style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;">Timbr</span>
+  </div>
+  <div class="sidebar-user">
+    <div class="name" id="sidebarName">Student</div>
+    <div class="email" id="sidebarEmail">student@timbr.com</div>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="/dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+    <a href="/sessions.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Study Sessions</a>
+    <a href="/tasks.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Tasks</a>
+    <a href="/statistics.html" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Statistics</a>
+    <a href="/leaderboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 6 9 6 9z"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 18 9 18 9z"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>Leaderboard</a>
+    <a href="/notifications.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Notifications</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button onclick="logout()" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--gray2);cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:500;">Sign Out</button>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<main class="main-content" id="mainContent">
+  <h1 class="page-title">Statistics</h1>
+  <p style="color:var(--gray);font-size:14px;margin-bottom:20px;">All stats computed from raw session data. Nothing is pre-stored.</p>
+
+  <!-- Tabs -->
+  <div class="tabs" id="tabs">
+    <button class="tab-btn active" data-period="daily">Daily</button>
+    <button class="tab-btn" data-period="weekly">Weekly</button>
+    <button class="tab-btn" data-period="monthly">Monthly</button>
+    <button class="tab-btn" data-period="yearly">Yearly</button>
+    <button class="tab-btn" data-period="subjects">Subjects</button>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
+    <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
+    <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
+    <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
+  </div>
+
+  <!-- Chart -->
+  <div class="chart-section">
+    <h3 id="chartTitle">Daily Study Time</h3>
+    <div class="chart-wrap">
+      <canvas id="mainChart" height="300"></canvas>
+    </div>
+  </div>
+
+  <!-- Subject Distribution -->
+  <div class="chart-section" id="subjectDistSection">
+    <h3>Subject Distribution</h3>
+    <div class="chart-wrap">
+      <canvas id="subjectChart" height="250"></canvas>
+    </div>
+  </div>
+
+  <!-- Detailed Table -->
+  <div class="chart-section">
+    <h3>Detailed Breakdown</h3>
+    <div id="detailTable">
+      <div class="skeleton skeleton-text"></div>
+      <div class="skeleton skeleton-text"></div>
+    </div>
+  </div>
+</main>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-col"><h4>Timbr</h4><p style="color:var(--gray);font-size:13px;">Track every minute. Build lasting habits.</p></div>
+    <div class="footer-col"><h4>Platform</h4><a href="/dashboard.html">Dashboard</a><a href="/sessions.html">Sessions</a><a href="/statistics.html">Statistics</a></div>
+    <div class="footer-col"><h4>Support</h4><a href="mailto:text.me.md.alamin@gmail.com">Contact Admin</a><a href="/leaderboard.html">Leaderboard</a></div>
+    <div class="footer-col"><h4>Legal</h4><a href="#">Privacy Policy</a><a href="#">Terms of Service</a></div>
+  </div>
+  <div class="footer-bottom">&copy; 2024 Timbr. All rights reserved.</div>
+</footer>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// Auth Check
+const token = localStorage.getItem('timbr_token');
+const user = JSON.parse(localStorage.getItem('timbr_user') || 'null');
+if (!token || !user) { window.location.href = '/login.html'; }
+
+const API_BASE = '/api';
+let currentPeriod = 'daily';
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = String(s || '');
+  return d.innerHTML;
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast toast-${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+async function api(method, path, body) {
+  try {
+    const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }};
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(API_BASE + path, opts);
+    const data = await res.json();
+    return { ok: res.ok, data, status: res.status };
+  } catch(e) {
+    return { ok: false, data: { error: 'Network error. Please try again.' }, status: 0 };
+  }
+}
+
+function logout() {
+  localStorage.removeItem('timbr_token');
+  localStorage.removeItem('timbr_user');
+  window.location.href = '/login.html';
+}
+
+// UI Setup
+document.getElementById('profileName').textContent = user.name || 'Student';
+document.getElementById('sidebarName').textContent = user.name || 'Student';
+document.getElementById('sidebarEmail').textContent = user.email || '';
+document.getElementById('profileAvatar').textContent = (user.name || 'S').charAt(0).toUpperCase();
+
+// Header scroll
+let lastScroll = 0;
+window.addEventListener('scroll', () => {
+  const current = window.pageYOffset;
+  document.getElementById('header').classList.toggle('hidden', current > lastScroll && current > 70);
+  lastScroll = current;
+});
+
+// Sidebar
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('sidebarOverlay');
+document.getElementById('hamburgerBtn').addEventListener('click', () => {
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('show');
+});
+overlay.addEventListener('click', () => { sidebar.classList.remove('open'); overlay.classList.remove('show'); });
+
+// Profile dropdown
+document.getElementById('profileBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  document.getElementById('profileDropdown').classList.toggle('show');
+});
+document.addEventListener('click', () => document.getElementById('profileDropdown').classList.remove('show'));
+
+// Tabs
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentPeriod = btn.dataset.period;
+    loadStats();
+  });
+});
+
+// ============================================================
+// Simple Chart Drawing (Canvas-based, no library)
+// ============================================================
+function drawBarChart(canvas, data, labels, colors) {
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 300 * dpr;
+  ctx.scale(dpr, dpr);
+  
+  const w = rect.width;
+  const h = 300;
+  const padding = { top: 30, right: 20, bottom: 50, left: 50 };
+  const chartW = w - padding.left - padding.right;
+  const chartH = h - padding.top - padding.bottom;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  // Background
+  ctx.fillStyle = '#0b0f1a';
+  ctx.fillRect(0, 0, w, h);
+  
+  const maxVal = Math.max(...data, 1);
+  const barWidth = Math.min(40, chartW / data.length - 8);
+  
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = padding.top + (chartH / 4) * i;
+    ctx.beginPath();
+    ctx.moveTo(padding.left, y);
+    ctx.lineTo(w - padding.right, y);
+    ctx.stroke();
+    
+    ctx.fillStyle = '#7a8899';
+    ctx.font = '11px "DM Mono", monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(Math.round(maxVal - (maxVal / 4) * i), padding.left - 8, y + 4);
+  }
+  
+  // Bars
+  data.forEach((val, i) => {
+    const barH = (val / maxVal) * chartH;
+    const x = padding.left + i * (chartW / data.length) + (chartW / data.length - barWidth) / 2;
+    const y = padding.top + chartH - barH;
+    
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.beginPath();
+    ctx.roundRect(x, y, barWidth, barH, [4, 4, 0, 0]);
+    ctx.fill();
+    
+    // Label
+    ctx.fillStyle = '#a0adb8';
+    ctx.font = '10px "Cabinet Grotesk", sans-serif';
+    ctx.textAlign = 'center';
+    const label = labels[i];
+    if (label.length > 6) {
+      ctx.fillText(label.slice(0, 6) + '..', x + barWidth / 2, h - padding.bottom + 18);
+    } else {
+      ctx.fillText(label, x + barWidth / 2, h - padding.bottom + 18);
+    }
+  });
+}
+
+function drawPieChart(canvas, data, labels, colors) {
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 250 * dpr;
+  ctx.scale(dpr, dpr);
+  
+  const w = rect.width;
+  const h = 250;
+  const cx = w / 2;
+  const cy = h / 2;
+  const radius = Math.min(w, h) / 2 - 60;
+  
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#0b0f1a';
+  ctx.fillRect(0, 0, w, h);
+  
+  const total = data.reduce((a, b) => a + b, 0);
+  if (total === 0) {
+    ctx.fillStyle = '#7a8899';
+    ctx.font = '14px "Cabinet Grotesk", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No data', cx, cy);
+    return;
+  }
+  
+  let startAngle = -Math.PI / 2;
+  
+  data.forEach((val, i) => {
+    const sliceAngle = (val / total) * Math.PI * 2;
+    
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, radius, startAngle, startAngle + sliceAngle);
+    ctx.closePath();
+    ctx.fill();
+    
+    // Label
+    const midAngle = startAngle + sliceAngle / 2;
+    const labelX = cx + Math.cos(midAngle) * (radius + 30);
+    const labelY = cy + Math.sin(midAngle) * (radius + 30);
+    
+    ctx.fillStyle = '#f0f4f8';
+    ctx.font = '11px "Cabinet Grotesk", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(labels[i], labelX, labelY);
+    ctx.fillText(Math.round(val) + ' min', labelX, labelY + 14);
+    
+    startAngle += sliceAngle;
+  });
+}
+
+function drawLineChart(canvas, data, labels) {
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 300 * dpr;
+  ctx.scale(dpr, dpr);
+  
+  const w = rect.width;
+  const h = 300;
+  const padding = { top: 30, right: 20, bottom: 50, left: 50 };
+  const chartW = w - padding.left - padding.right;
+  const chartH = h - padding.top - padding.bottom;
+  
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#0b0f1a';
+  ctx.fillRect(0, 0, w, h);
+  
+  const maxVal = Math.max(...data, 1);
+  
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = padding.top + (chartH / 4) * i;
+    ctx.beginPath();
+    ctx.moveTo(padding.left, y);
+    ctx.lineTo(w - padding.right, y);
+    ctx.stroke();
+    
+    ctx.fillStyle = '#7a8899';
+    ctx.font = '11px "DM Mono", monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(Math.round(maxVal - (maxVal / 4) * i), padding.left - 8, y + 4);
+  }
+  
+  // Line
+  ctx.strokeStyle = '#00d4aa';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  
+  data.forEach((val, i) => {
+    const x = padding.left + (i / (data.length - 1 || 1)) * chartW;
+    const y = padding.top + chartH - (val / maxVal) * chartH;
+    
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  
+  // Dots
+  data.forEach((val, i) => {
+    const x = padding.left + (i / (data.length - 1 || 1)) * chartW;
+    const y = padding.top + chartH - (val / maxVal) * chartH;
+    
+    ctx.fillStyle = '#00d4aa';
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.fillStyle = '#a0adb8';
+    ctx.font = '10px "Cabinet Grotesk", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(labels[i] || '', x, h - padding.bottom + 18);
+  });
+}
+
+// ============================================================
+// Load Stats
+// ============================================================
+async function loadStats() {
+  const mainChart = document.getElementById('mainChart');
+  const subjectChart = document.getElementById('subjectChart');
+  const subjectDistSection = document.getElementById('subjectDistSection');
+  
+  // Show loading
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
+    <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
+    <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
+    <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>`;
+  
+  if (currentPeriod === 'subjects') {
+    // Subject distribution
+    document.getElementById('chartTitle').textContent = 'Subject Distribution';
+    subjectDistSection.style.display = 'none';
+    
+    const res = await api('GET', '/stats/subject-distribution');
+    if (!res.ok) { showToast('Failed to load', 'error'); return; }
+    
+    const data = res.data || [];
+    const labels = data.map(d => d.subject);
+    const values = data.map(d => Math.round(d.total_minutes));
+    const colors = ['#00d4aa', '#00b894', '#f59e0b', '#f0566a', '#7c3aed', '#3b82f6', '#10d48e', '#ec4899'];
+    
+    drawPieChart(subjectChart, values, labels, colors);
+    drawBarChart(mainChart, values, labels, colors);
+    
+    // Stats
+    const totalMin = values.reduce((a,b) => a+b, 0);
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="label">Total Subjects</div><div class="value">${data.length}</div></div>
+      <div class="stat-card"><div class="label">Total Minutes</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
+      <div class="stat-card"><div class="label">Top Subject</div><div class="value" style="font-size:18px;">${esc(data[0]?.subject || '-')}</div></div>
+      <div class="stat-card"><div class="label">Total Sessions</div><div class="value">${data.reduce((a,b) => a + b.total_sessions, 0)}</div></div>`;
+    
+    // Table
+    document.getElementById('detailTable').innerHTML = data.length ? `
+      <div class="table-wrap"><table>
+        <thead><tr><th>Subject</th><th>Sessions</th><th>Total Minutes</th><th>Hours</th></tr></thead>
+        <tbody>${data.map(d => `<tr><td>${esc(d.subject)}</td><td>${d.total_sessions}</td><td>${Math.round(d.total_minutes)}</td><td>${(d.total_minutes / 60).toFixed(1)}</td></tr>`).join('')}</tbody>
+      </table></div>` : '<p style="color:var(--gray);">No data yet.</p>';
+    
+  } else if (currentPeriod === 'daily') {
+    subjectDistSection.style.display = 'block';
+    document.getElementById('chartTitle').textContent = 'Daily Study Time';
+    
+    const today = new Date().toISOString().split('T')[0];
+    const res = await api('GET', '/stats/daily', { date: today });
+    if (!res.ok) { showToast('Failed to load', 'error'); return; }
+    
+    const data = res.data.stats || [];
+    const labels = data.map(d => d.subject);
+    const actualMins = data.map(d => Math.round(d.actual_minutes));
+    const lostMins = data.map(d => Math.round(d.lost_minutes));
+    const colors = ['#00d4aa', '#f0566a', '#f59e0b', '#7c3aed', '#3b82f6'];
+    
+    drawBarChart(mainChart, actualMins, labels, colors);
+    
+    // Subject chart
+    const subRes = await api('GET', '/stats/subject-distribution');
+    if (subRes.ok) {
+      const subData = subRes.data || [];
+      drawPieChart(subjectChart, subData.map(d => Math.round(d.total_minutes)), subData.map(d => d.subject), ['#00d4aa', '#00b894', '#f59e0b', '#f0566a', '#7c3aed', '#3b82f6', '#10d48e', '#ec4899']);
+    }
+    
+    const totalMin = actualMins.reduce((a,b) => a+b, 0);
+    const totalLost = lostMins.reduce((a,b) => a+b, 0);
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="label">Today's Study</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
+      <div class="stat-card"><div class="label">Lost Time</div><div class="value" style="color:var(--red);">${totalLost}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
+      <div class="stat-card"><div class="label">Sessions</div><div class="value">${data.length}</div></div>
+      <div class="stat-card"><div class="label">Completed</div><div class="value">${data.reduce((a,d) => a + d.completed, 0)}</div></div>`;
+    
+    document.getElementById('detailTable').innerHTML = data.length ? `
+      <div class="table-wrap"><table>
+        <thead><tr><th>Subject</th><th>Sessions</th><th>Completed</th><th>Partial</th><th>Missed</th><th>Minutes</th><th>Lost</th></tr></thead>
+        <tbody>${data.map(d => `<tr><td>${esc(d.subject)}</td><td>${d.session_count}</td><td>${d.completed}</td><td>${d.partial}</td><td>${d.missed}</td><td>${Math.round(d.actual_minutes)}</td><td>${Math.round(d.lost_minutes)}</td></tr>`).join('')}</tbody>
+      </table></div>` : '<div class="empty-state"><p style="color:var(--gray);">No sessions today</p></div>';
+    
+  } else if (currentPeriod === 'weekly') {
+    subjectDistSection.style.display = 'block';
+    document.getElementById('chartTitle').textContent = 'Weekly Study Time';
+    
+    const res = await api('GET', '/stats/weekly');
+    if (!res.ok) { showToast('Failed to load', 'error'); return; }
+    
+    const data = res.data.stats || [];
+    const labels = data.map(d => d.study_date.slice(5));
+    const values = data.map(d => Math.round(d.actual_minutes));
+    const colors = ['#00d4aa', '#00b894', '#10d48e', '#34d399', '#6ee7b7', '#a7f3d0', '#d1fae5'];
+    
+    drawBarChart(mainChart, values, labels, colors);
+    
+    const subRes = await api('GET', '/stats/subject-distribution');
+    if (subRes.ok) {
+      const subData = subRes.data || [];
+      drawPieChart(subjectChart, subData.map(d => Math.round(d.total_minutes)), subData.map(d => d.subject), ['#00d4aa', '#00b894', '#f59e0b', '#f0566a', '#7c3aed', '#3b82f6', '#10d48e', '#ec4899']);
+    }
+    
+    const totalMin = values.reduce((a,b) => a+b, 0);
+    const totalLost = data.reduce((a,d) => a + Math.round(d.lost_minutes), 0);
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="label">Weekly Total</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div><div class="sub">${(totalMin/60).toFixed(1)} hours</div></div>
+      <div class="stat-card"><div class="label">Lost Time</div><div class="value" style="color:var(--red);">${totalLost}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
+      <div class="stat-card"><div class="label">Total Sessions</div><div class="value">${data.reduce((a,d) => a + d.session_count, 0)}</div></div>
+      <div class="stat-card"><div class="label">Avg/Day</div><div class="value">${Math.round(totalMin / Math.max(data.length, 1))}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>`;
+    
+    document.getElementById('detailTable').innerHTML = data.length ? `
+      <div class="table-wrap"><table>
+        <thead><tr><th>Date</th><th>Sessions</th><th>Completed</th><th>Minutes</th><th>Lost</th></tr></thead>
+        <tbody>${data.map(d => `<tr><td>${esc(d.study_date)}</td><td>${d.session_count}</td><td>${d.completed}</td><td>${Math.round(d.actual_minutes)}</td><td>${Math.round(d.lost_minutes)}</td></tr>`).join('')}</tbody>
+      </table></div>` : '<div class="empty-state"><p style="color:var(--gray);">No data this week</p></div>';
+    
+  } else if (currentPeriod === 'monthly') {
+    subjectDistSection.style.display = 'block';
+    document.getElementById('chartTitle').textContent = 'Monthly Study by Subject';
+    
+    const res = await api('GET', '/stats/monthly');
+    if (!res.ok) { showToast('Failed to load', 'error'); return; }
+    
+    const data = res.data.stats || [];
+    const labels = data.map(d => d.subject);
+    const values = data.map(d => Math.round(d.actual_minutes));
+    const colors = ['#00d4aa', '#00b894', '#f59e0b', '#f0566a', '#7c3aed', '#3b82f6', '#10d48e', '#ec4899'];
+    
+    drawBarChart(mainChart, values, labels, colors);
+    
+    const subRes = await api('GET', '/stats/subject-distribution');
+    if (subRes.ok) {
+      const subData = subRes.data || [];
+      drawPieChart(subjectChart, subData.map(d => Math.round(d.total_minutes)), subData.map(d => d.subject), colors);
+    }
+    
+    const totalMin = values.reduce((a,b) => a+b, 0);
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="label">Monthly Total</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div><div class="sub">${(totalMin/60).toFixed(1)} hours</div></div>
+      <div class="stat-card"><div class="label">Total Sessions</div><div class="value">${data.reduce((a,d) => a + d.session_count, 0)}</div></div>
+      <div class="stat-card"><div class="label">Subjects</div><div class="value">${data.length}</div></div>
+      <div class="stat-card"><div class="label">Top Subject</div><div class="value" style="font-size:18px;">${esc(data[0]?.subject || '-')}</div></div>`;
+    
+    document.getElementById('detailTable').innerHTML = data.length ? `
+      <div class="table-wrap"><table>
+        <thead><tr><th>Subject</th><th>Sessions</th><th>Completed</th><th>Minutes</th><th>Hours</th></tr></thead>
+        <tbody>${data.map(d => `<tr><td>${esc(d.subject)}</td><td>${d.session_count}</td><td>${d.completed}</td><td>${Math.round(d.actual_minutes)}</td><td>${(d.actual_minutes/60).toFixed(1)}</td></tr>`).join('')}</tbody>
+      </table></div>` : '<div class="empty-state"><p style="color:var(--gray);">No data this month</p></div>';
+    
+  } else if (currentPeriod === 'yearly') {
+    subjectDistSection.style.display = 'block';
+    document.getElementById('chartTitle').textContent = 'Yearly Study Trend';
+    
+    // Get all sessions and group by month
+    const res = await api('GET', '/sessions', { limit: 1000 });
+    if (!res.ok) { showToast('Failed to load', 'error'); return; }
+    
+    const sessions = res.data.sessions || [];
+    const monthlyData = {};
+    
+    sessions.forEach(s => {
+      if (s.actual_start && s.actual_end) {
+        const month = s.study_date.slice(0, 7);
+        const mins = Math.round((new Date(s.actual_end) - new Date(s.actual_start)) / 60000) - (s.lost_minutes || 0);
+        monthlyData[month] = (monthlyData[month] || 0) + Math.max(0, mins);
+      }
+    });
+    
+    const months = Object.keys(monthlyData).sort();
+    const values = months.map(m => monthlyData[m]);
+    const colors = Array(months.length).fill('#00d4aa');
+    
+    drawLineChart(mainChart, values, months.map(m => m.slice(5)));
+    
+    const subRes = await api('GET', '/stats/subject-distribution');
+    if (subRes.ok) {
+      const subData = subRes.data || [];
+      drawPieChart(subjectChart, subData.map(d => Math.round(d.total_minutes)), subData.map(d => d.subject), ['#00d4aa', '#00b894', '#f59e0b', '#f0566a', '#7c3aed', '#3b82f6', '#10d48e', '#ec4899']);
+    }
+    
+    const totalMin = values.reduce((a,b) => a+b, 0);
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="label">Yearly Total</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div><div class="sub">${(totalMin/60).toFixed(1)} hours</div></div>
+      <div class="stat-card"><div class="label">Active Months</div><div class="value">${months.length}</div></div>
+      <div class="stat-card"><div class="label">Avg/Month</div><div class="value">${Math.round(totalMin / Math.max(months.length, 1))}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
+      <div class="stat-card"><div class="label">Total Sessions</div><div class="value">${sessions.length}</div></div>`;
+    
+    document.getElementById('detailTable').innerHTML = months.length ? `
+      <div class="table-wrap"><table>
+        <thead><tr><th>Month</th><th>Minutes</th><th>Hours</th></tr></thead>
+        <tbody>${months.map(m => `<tr><td>${esc(m)}</td><td>${monthlyData[m]}</td><td>${(monthlyData[m]/60).toFixed(1)}</td></tr>`).join('')}</tbody>
+      </table></div>` : '<div class="empty-state"><p style="color:var(--gray);">No data this year</p></div>';
+  }
+}
+
+// ============================================================
+// Notifications Badge
+// ============================================================
+async function loadNotifBadge() {
+  const res = await api('GET', '/notifications/unread-count');
+  if (res.ok && res.data.count > 0) {
+    const badge = document.getElementById('notifBadge');
+    badge.textContent = res.data.count > 99 ? '99+' : res.data.count;
+    badge.classList.add('show');
+  }
+}
+
+// ============================================================
+// Init
+// ============================================================
+loadStats();
+loadNotifBadge();
+setInterval(loadNotifBadge, 60000);
+
+// Redraw charts on resize
+window.addEventListener('resize', () => { loadStats(); });
+</script>
+</body>
+</html>
