@@ -45,7 +45,6 @@ body {
 h1, h2, h3, h4 { font-family: 'Cormorant Garamond', serif; }
 a { color: var(--accent); text-decoration: none; }
 
-/* Header */
 .header {
   position: fixed; top:0; left:0; right:0;
   height: var(--header-h);
@@ -114,7 +113,6 @@ a { color: var(--accent); text-decoration: none; }
 }
 .profile-dropdown .divider { height: 1px; background: var(--border); margin: 6px 0; }
 
-/* Sidebar */
 .sidebar-overlay {
   position: fixed; inset:0;
   background: rgba(0,0,0,0.5);
@@ -157,7 +155,6 @@ a { color: var(--accent); text-decoration: none; }
 .sidebar-nav button svg { width: 20px; height: 20px; flex-shrink: 0; }
 .sidebar-footer { padding: 12px 20px; border-top: 1px solid var(--border); }
 
-/* Main */
 .main-content {
   margin-left: 0;
   margin-top: var(--header-h);
@@ -168,10 +165,9 @@ a { color: var(--accent); text-decoration: none; }
 .view.active { display: block; }
 .page-title { font-size: 28px; margin-bottom: 24px; }
 
-/* Stats Grid */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -192,7 +188,6 @@ a { color: var(--accent); text-decoration: none; }
   color: var(--accent);
 }
 
-/* Section */
 .section {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -208,7 +203,6 @@ a { color: var(--accent); text-decoration: none; }
 }
 .section-header h3 { font-size: 18px; }
 
-/* Toolbar */
 .toolbar {
   display: flex; align-items: center;
   justify-content: space-between;
@@ -218,7 +212,6 @@ a { color: var(--accent); text-decoration: none; }
 .toolbar-left { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .toolbar-right { display: flex; gap: 10px; }
 
-/* Buttons */
 .btn {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 10px 18px; border-radius: var(--radius);
@@ -241,7 +234,6 @@ a { color: var(--accent); text-decoration: none; }
 .btn-sm { padding: 6px 12px; font-size: 12px; }
 .btn-xs { padding: 4px 10px; font-size: 11px; }
 
-/* Inputs */
 input, select, textarea {
   padding: 10px 14px;
   background: var(--surface2);
@@ -256,7 +248,6 @@ input, select, textarea {
 input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 textarea { resize: vertical; min-height: 60px; }
 
-/* Table */
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
 th {
@@ -280,7 +271,6 @@ td {
 .badge-admin { background: var(--accent-dim); color: var(--accent); }
 .action-btns { display: flex; gap: 4px; flex-wrap: wrap; }
 
-/* Modal */
 .modal-overlay {
   position: fixed; inset:0;
   background: rgba(0,0,0,0.7);
@@ -329,7 +319,6 @@ td {
 .alert-msg.error { background: var(--red-dim); color: var(--red); border: 1px solid rgba(240,86,106,0.3); display: block; }
 .alert-msg.success { background: var(--green-dim); color: var(--green); border: 1px solid rgba(16,212,142,0.3); display: block; }
 
-/* Skeleton */
 .skeleton {
   background: linear-gradient(90deg, var(--surface2) 25%, var(--surface3) 50%, var(--surface2) 75%);
   background-size: 200% 100%;
@@ -340,7 +329,6 @@ td {
 .skeleton-text { height: 14px; margin-bottom: 8px; width: 80%; }
 .skeleton-text.short { width: 50%; }
 
-/* Toast */
 .toast {
   position: fixed; bottom: 24px; right: 24px;
   padding: 12px 20px; border-radius: var(--radius);
@@ -352,13 +340,11 @@ td {
 .toast-success { background: var(--green); color: #000; }
 .toast-error { background: var(--red); color: #fff; }
 
-/* Pagination */
 .pagination {
   display: flex; justify-content: center; gap: 8px;
   margin-top: 20px;
 }
 
-/* Footer */
 footer {
   border-top: 1px solid var(--border);
   padding: 40px 24px; margin-top: auto;
@@ -404,7 +390,7 @@ footer {
 <div id="masterGate" style="position:fixed;inset:0;background:var(--bg);z-index:500;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;padding:20px;">
   <img src="/images/timbr.png" height="48" alt="Timbr">
   <h2 style="font-family:'Cormorant Garamond',serif;">Admin Access</h2>
-  <p style="color:var(--gray);text-align:center;">Enter your master key to access the admin panel.<br>This key is saved to your session for security.</p>
+  <p style="color:var(--gray);text-align:center;">Enter your master key to access the admin panel.</p>
   <div style="display:flex;gap:10px;max-width:400px;width:100%;">
     <input type="password" id="masterKeyInput" placeholder="Enter master key" style="flex:1;padding:12px 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--white);font-size:15px;outline:none;">
     <button class="btn btn-primary" onclick="verifyMasterKey()">Unlock</button>
@@ -506,7 +492,7 @@ footer {
     <h1 class="page-title">User Management</h1>
     <div class="toolbar">
       <div class="toolbar-left">
-        <input type="text" id="userSearch" placeholder="Search by username, email, or name..." style="width:260px;" oninput="loadUsers()">
+        <input type="text" id="userSearch" placeholder="Search by username, email, or name..." style="width:260px;" oninput="debounceLoadUsers()">
         <select id="userRoleFilter" onchange="loadUsers()"><option value="">All Roles</option><option value="student">Student</option><option value="admin">Admin</option></select>
         <select id="userStatusFilter" onchange="loadUsers()"><option value="">All Status</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="blocked">Blocked</option></select>
       </div>
@@ -567,7 +553,7 @@ footer {
 
 </main>
 
-<!-- Generic Modal -->
+<!-- Modal -->
 <div class="modal-overlay" id="gModal">
   <div class="modal" id="modalContent"></div>
 </div>
@@ -587,9 +573,7 @@ footer {
 <div class="toast" id="toast"></div>
 
 <script>
-// ============================================================
-// Auth & Master Key
-// ============================================================
+// Auth Check
 const token = localStorage.getItem('timbr_token');
 const user = JSON.parse(localStorage.getItem('timbr_user') || 'null');
 if (!token || !user || user.role !== 'admin') { window.location.href = '/login.html'; }
@@ -598,6 +582,7 @@ const API_BASE = '/api';
 let masterToken = sessionStorage.getItem('timbr_master_token');
 let usersPage = 1;
 let currentView = 'dashboard';
+let searchTimeout;
 
 function esc(s) {
   const d = document.createElement('div');
@@ -612,11 +597,27 @@ function showToast(msg, type='success') {
   setTimeout(() => t.classList.remove('show'), 3500);
 }
 
+// FIXED: api() function
 async function api(method, path, body) {
   try {
     const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }};
-    if (body) opts.body = JSON.stringify(body);
-    const res = await fetch(API_BASE + path, opts);
+    
+    let url = API_BASE + path;
+    
+    if (method === 'GET' && body) {
+      const params = new URLSearchParams();
+      for (const [key, value] of Object.entries(body)) {
+        if (value !== undefined && value !== null && value !== '') {
+          params.append(key, String(value));
+        }
+      }
+      const qs = params.toString();
+      if (qs) url += '?' + qs;
+    } else if (body) {
+      opts.body = JSON.stringify(body);
+    }
+    
+    const res = await fetch(url, opts);
     const data = await res.json();
     return { ok: res.ok, data, status: res.status };
   } catch(e) {
@@ -631,7 +632,6 @@ function logout() {
   window.location.href = '/login.html';
 }
 
-// Master Key Verification
 async function verifyMasterKey() {
   const key = document.getElementById('masterKeyInput').value;
   const errorEl = document.getElementById('masterError');
@@ -665,20 +665,17 @@ async function changeMasterKey() {
   showToast('Master key changed. Please re-enter.');
 }
 
-// Check if master key already verified
 if (masterToken) {
   document.getElementById('masterGate').style.display = 'none';
 } else {
   document.getElementById('masterGate').style.display = 'flex';
 }
 
-// UI Setup
 document.getElementById('profileName').textContent = user.name || 'Admin';
 document.getElementById('sidebarName').textContent = user.name || 'Admin';
 document.getElementById('sidebarEmail').textContent = user.email || '';
 document.getElementById('profileAvatar').textContent = (user.name || 'A').charAt(0).toUpperCase();
 
-// Header scroll
 let lastScroll = 0;
 window.addEventListener('scroll', () => {
   const current = window.pageYOffset;
@@ -686,7 +683,6 @@ window.addEventListener('scroll', () => {
   lastScroll = current;
 });
 
-// Sidebar
 const sidebar = document.getElementById('sidebar');
 const overlay = document.getElementById('sidebarOverlay');
 document.getElementById('hamburgerBtn').addEventListener('click', () => {
@@ -695,22 +691,21 @@ document.getElementById('hamburgerBtn').addEventListener('click', () => {
 });
 overlay.addEventListener('click', () => { sidebar.classList.remove('open'); overlay.classList.remove('show'); });
 
-// Profile dropdown
 document.getElementById('profileBtn').addEventListener('click', (e) => {
   e.stopPropagation();
   document.getElementById('profileDropdown').classList.toggle('show');
 });
 document.addEventListener('click', () => document.getElementById('profileDropdown').classList.remove('show'));
 
-// ============================================================
 // View Switching
-// ============================================================
 function showView(viewName) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.getElementById('view-' + viewName).classList.add('active');
+  const targetView = document.getElementById('view-' + viewName);
+  if (targetView) targetView.classList.add('active');
   
   document.querySelectorAll('.sidebar-nav button').forEach(b => b.classList.remove('active'));
-  document.querySelector(`[data-view="${viewName}"]`).classList.add('active');
+  const navBtn = document.querySelector(`[data-view="${viewName}"]`);
+  if (navBtn) navBtn.classList.add('active');
   
   currentView = viewName;
   
@@ -724,9 +719,7 @@ function showView(viewName) {
   overlay.classList.remove('show');
 }
 
-// ============================================================
 // Modal
-// ============================================================
 function openModal(title, bodyHtml, footerHtml) {
   document.getElementById('modalContent').innerHTML = `
     <h3>${title}</h3>
@@ -752,20 +745,31 @@ document.getElementById('gModal').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
 
+document.getElementById('masterKeyInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') verifyMasterKey();
+});
+
 // ============================================================
 // Dashboard
 // ============================================================
 async function loadDashboard() {
+  document.getElementById('dashStats').innerHTML = `
+    <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
+    <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
+    <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
+    <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>`;
+  
   const res = await api('GET', '/admin/dashboard');
   if (!res.ok) { showToast('Failed to load dashboard', 'error'); return; }
   
   const d = res.data;
   document.getElementById('dashStats').innerHTML = `
-    <div class="stat-card"><div class="label">Total Users</div><div class="value">${d.total_users}</div></div>
-    <div class="stat-card"><div class="label">Pending Approval</div><div class="value" style="color:var(--orange);">${d.pending_users}</div></div>
-    <div class="stat-card"><div class="label">Blocked</div><div class="value" style="color:var(--red);">${d.blocked_users}</div></div>
-    <div class="stat-card"><div class="label">Total Sessions</div><div class="value">${d.total_sessions}</div></div>
-    <div class="stat-card"><div class="label">Total Hours</div><div class="value">${d.total_hours}<span style="font-size:14px;color:var(--gray);"> hrs</span></div></div>
+    <div class="stat-card"><div class="label">Total Users</div><div class="value">${d.total_users || 0}</div></div>
+    <div class="stat-card"><div class="label">Approved</div><div class="value" style="color:var(--green);">${d.approved_users || 0}</div></div>
+    <div class="stat-card"><div class="label">Pending</div><div class="value" style="color:var(--orange);">${d.pending_users || 0}</div></div>
+    <div class="stat-card"><div class="label">Blocked</div><div class="value" style="color:var(--red);">${d.blocked_users || 0}</div></div>
+    <div class="stat-card"><div class="label">Total Sessions</div><div class="value">${d.total_sessions || 0}</div></div>
+    <div class="stat-card"><div class="label">Total Hours</div><div class="value">${d.total_hours || 0}<span style="font-size:14px;color:var(--gray);"> hrs</span></div></div>
   `;
   
   const topUsers = d.top_users || [];
@@ -773,33 +777,48 @@ async function loadDashboard() {
     <div class="table-wrap"><table>
       <thead><tr><th>Rank</th><th>Name</th><th>Username</th><th>Hours</th></tr></thead>
       <tbody>${topUsers.map((u, i) => `<tr><td>#${i+1}</td><td>${esc(u.name)}</td><td>@${esc(u.username)}</td><td>${u.total_hours}</td></tr>`).join('')}</tbody>
-    </table></div>` : '<p style="color:var(--gray);">No study data yet.</p>';
+    </table></div>` : '<p style="color:var(--gray);text-align:center;padding:20px;">No study data yet. Students need to complete study sessions to appear here.</p>';
 }
 
 // ============================================================
 // Users
 // ============================================================
+function debounceLoadUsers() {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => loadUsers(1), 400);
+}
+
 async function loadUsers(page = 1) {
   usersPage = page;
   const table = document.getElementById('usersTable');
   table.innerHTML = '<div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text"></div>';
   
-  const search = document.getElementById('userSearch').value;
-  const role = document.getElementById('userRoleFilter').value;
-  const status = document.getElementById('userStatusFilter').value;
+  const search = document.getElementById('userSearch')?.value || '';
+  const role = document.getElementById('userRoleFilter')?.value || '';
+  const status = document.getElementById('userStatusFilter')?.value || '';
   
-  const body = { page, limit: 15 };
-  if (search) body.search = search;
-  if (role) body.role = role;
-  if (status) body.status = status;
+  const queryParams = { page, limit: 15 };
+  if (search) queryParams.search = search;
+  if (role) queryParams.role = role;
+  if (status) queryParams.status = status;
   
-  const res = await api('GET', '/admin/users', body);
-  if (!res.ok) { showToast('Failed to load users', 'error'); return; }
+  const res = await api('GET', '/admin/users', queryParams);
+  
+  if (!res.ok) {
+    table.innerHTML = `<div style="text-align:center;padding:40px;color:var(--gray);"><p>${esc(res.data.error || 'Failed to load users')}</p><button class="btn btn-outline btn-sm" onclick="loadUsers()">Retry</button></div>`;
+    return;
+  }
   
   const users = res.data.users || [];
   const total = res.data.total || 0;
   
-  table.innerHTML = users.length ? `
+  if (users.length === 0) {
+    table.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gray);">No users found.</div>';
+    document.getElementById('usersPagination').innerHTML = '';
+    return;
+  }
+  
+  table.innerHTML = `
     <table>
       <thead><tr><th>ID</th><th>Username</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
       <tbody>${users.map(u => `
@@ -821,14 +840,13 @@ async function loadUsers(page = 1) {
           </td>
         </tr>`).join('')}
       </tbody>
-    </table>` : '<p style="text-align:center;padding:20px;color:var(--gray);">No users found.</p>';
+    </table>`;
   
-  // Pagination
   const totalPages = Math.ceil(total / 15);
   let pagHTML = '';
   if (totalPages > 1) {
     pagHTML += `<button class="btn btn-outline btn-sm" onclick="loadUsers(${usersPage - 1})" ${usersPage === 1 ? 'disabled' : ''}>Prev</button>`;
-    for (let i = 1; i <= totalPages; i++) {
+    for (let i = 1; i <= Math.min(totalPages, 10); i++) {
       pagHTML += `<button class="btn ${i === usersPage ? 'btn-primary' : 'btn-outline'} btn-sm" onclick="loadUsers(${i})">${i}</button>`;
     }
     pagHTML += `<button class="btn btn-outline btn-sm" onclick="loadUsers(${usersPage + 1})" ${usersPage === totalPages ? 'disabled' : ''}>Next</button>`;
@@ -893,7 +911,7 @@ async function resetUserData(id) {
 }
 
 async function deleteUser(id) {
-  if (!confirm('PERMANENTLY delete this user and ALL their data? This cannot be undone.')) return;
+  if (!confirm('PERMANENTLY delete this user and ALL their data?')) return;
   const res = await api('DELETE', `/admin/users/${id}`);
   if (res.ok) { showToast('User deleted'); loadUsers(); }
   else showToast(res.data.error || 'Failed', 'error');
@@ -916,7 +934,7 @@ async function loadAdminNotifications() {
       <tbody>${notifs.map(n => `
         <tr>
           <td>${esc(n.title)}</td>
-          <td><span class="badge type-${esc(n.type)}" style="background:var(--${n.type === 'Important' ? 'red' : n.type === 'Warning' ? 'orange' : n.type === 'Success' ? 'green' : 'accent'}-dim);color:var(--${n.type === 'Important' ? 'red' : n.type === 'Warning' ? 'orange' : n.type === 'Success' ? 'green' : 'accent'});">${n.type}</span></td>
+          <td><span style="font-size:11px;padding:2px 8px;border-radius:12px;background:var(--${n.type === 'Important' ? 'red' : n.type === 'Warning' ? 'orange' : n.type === 'Success' ? 'green' : 'accent'}-dim);color:var(--${n.type === 'Important' ? 'red' : n.type === 'Warning' ? 'orange' : n.type === 'Success' ? 'green' : 'accent'});">${n.type}</span></td>
           <td>${esc(n.audience)}</td>
           <td>${n.pinned ? 'Yes' : 'No'}</td>
           <td>${n.active ? 'Yes' : 'No'}</td>
@@ -929,7 +947,7 @@ async function loadAdminNotifications() {
           </td>
         </tr>`).join('')}
       </tbody>
-    </table></div>` : '<p style="text-align:center;padding:20px;color:var(--gray);">No notifications.</p>';
+    </table></div>` : '<p style="text-align:center;padding:40px;color:var(--gray);">No notifications yet.</p>';
 }
 
 function openNotifModal(editData = null) {
@@ -940,7 +958,7 @@ function openNotifModal(editData = null) {
     <div class="form-group"><label>Message</label><textarea id="nMessage">${esc(editData?.message || '')}</textarea></div>
     <div class="form-row">
       <div class="form-group"><label>Type</label><select id="nType">${['Info','Success','Warning','Important'].map(t => `<option value="${t}" ${editData?.type === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
-      <div class="form-group"><label>Audience</label><select id="nAudience">${['Everyone','Students','Admins','Approved users','Blocked users'].map(a => `<option value="${a}" ${editData?.audience === a ? 'selected' : ''}>${a}</option>`).join('')}</select></div>
+      <div class="form-group"><label>Audience</label><select id="nAudience">${['Everyone','Students','Admins'].map(a => `<option value="${a}" ${editData?.audience === a ? 'selected' : ''}>${a}</option>`).join('')}</select></div>
     </div>
     <div class="form-group"><label>Image URL</label><input type="url" id="nImageUrl" value="${esc(editData?.image_url || '')}" placeholder="https://..."></div>
     <div class="form-row">
@@ -951,7 +969,7 @@ function openNotifModal(editData = null) {
       <div class="form-group"><label>Start Date</label><input type="datetime-local" id="nStartDate" value="${editData?.start_date ? editData.start_date.slice(0,16) : ''}"></div>
       <div class="form-group"><label>End Date</label><input type="datetime-local" id="nEndDate" value="${editData?.end_date ? editData.end_date.slice(0,16) : ''}"></div>
     </div>
-    <div style="display:flex;gap:20px;">
+    <div style="display:flex;gap:20px;flex-wrap:wrap;">
       <div class="checkbox-group"><input type="checkbox" id="nPinned" ${editData?.pinned ? 'checked' : ''}><label for="nPinned" style="font-size:13px;">Pinned</label></div>
       <div class="checkbox-group"><input type="checkbox" id="nActive" ${editData ? (editData.active ? 'checked' : '') : 'checked'}><label for="nActive" style="font-size:13px;">Active</label></div>
       <div class="checkbox-group"><input type="checkbox" id="nPopup" ${editData?.popup ? 'checked' : ''}><label for="nPopup" style="font-size:13px;">Popup</label></div>
@@ -1030,7 +1048,7 @@ async function loadAuditLogs() {
           <td>${esc(l.performer_name || 'System')}</td>
         </tr>`).join('')}
       </tbody>
-    </table>` : '<p style="text-align:center;padding:20px;color:var(--gray);">No audit logs yet.</p>';
+    </table>` : '<p style="text-align:center;padding:40px;color:var(--gray);">No audit logs yet.</p>';
 }
 
 // ============================================================
@@ -1088,11 +1106,6 @@ function initAdmin() {
 if (masterToken) {
   initAdmin();
 }
-
-// Enter key on Enter
-document.getElementById('masterKeyInput').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') verifyMasterKey();
-});
 </script>
 </body>
 </html>
