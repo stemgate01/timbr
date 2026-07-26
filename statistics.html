@@ -425,6 +425,10 @@ const API_BASE = '/api';
 let currentPeriod = 'daily';
 const COLORS = ['#00d4aa', '#00b894', '#f59e0b', '#f0566a', '#7c3aed', '#3b82f6', '#10d48e', '#ec4899', '#06b6d4', '#f97316'];
 
+// Cache of last-drawn chart data per canvas, so a window resize can redraw
+// without re-fetching from the API.
+const lastChartCall = {}; // canvasId -> { type, data, labels }
+
 function esc(s) {
   const d = document.createElement('div');
   d.textContent = String(s || '');
@@ -511,14 +515,37 @@ function clearCanvas(canvas) {
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
+  const cssHeight = parseInt(canvas.getAttribute('height'), 10) || 300;
+
+  // FIX: previously only canvas.width/height (the backing-store size) were
+  // scaled by dpr, but canvas.style.height was never set. On any screen
+  // with dpr > 1 (basically every phone) the canvas's on-page CSS height
+  // defaulted to its intrinsic pixel height (height * dpr), so charts
+  // rendered 2-3x taller than intended and blew out the layout.
+  // Setting style.width/height locks the DISPLAYED size to the CSS pixel
+  // size, while width/height (the backing store) stays at the higher
+  // dpr-scaled resolution for crisp rendering.
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = cssHeight + 'px';
   canvas.width = rect.width * dpr;
-  canvas.height = canvas.getAttribute('height') * dpr;
+  canvas.height = cssHeight * dpr;
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0); // reset scale before reapplying (avoids compounding on redraw)
   ctx.scale(dpr, dpr);
-  ctx.clearRect(0, 0, rect.width, parseInt(canvas.getAttribute('height')));
-  return { ctx, w: rect.width, h: parseInt(canvas.getAttribute('height')) };
+  ctx.clearRect(0, 0, rect.width, cssHeight);
+  return { ctx, w: rect.width, h: cssHeight };
+}
+
+// Skip drawing into a canvas that's hidden (e.g. subjectChart while the
+// Subjects tab is active) — getBoundingClientRect() returns 0 width there,
+// which used to still trigger a wasted/degenerate draw call.
+function isVisible(canvas) {
+  return canvas.offsetParent !== null && canvas.getBoundingClientRect().width > 0;
 }
 
 function drawBarChart(canvas, data, labels) {
+  lastChartCall[canvas.id] = { type: 'bar', data, labels };
+  if (!isVisible(canvas)) return;
   const { ctx, w, h } = clearCanvas(canvas);
   if (data.length === 0) {
     ctx.fillStyle = '#7a8899';
@@ -573,6 +600,8 @@ function drawBarChart(canvas, data, labels) {
 }
 
 function drawPieChart(canvas, data, labels) {
+  lastChartCall[canvas.id] = { type: 'pie', data, labels };
+  if (!isVisible(canvas)) return;
   const { ctx, w, h } = clearCanvas(canvas);
   const total = data.reduce((a, b) => a + b, 0);
   
@@ -614,6 +643,8 @@ function drawPieChart(canvas, data, labels) {
 }
 
 function drawLineChart(canvas, data, labels) {
+  lastChartCall[canvas.id] = { type: 'line', data, labels };
+  if (!isVisible(canvas)) return;
   const { ctx, w, h } = clearCanvas(canvas);
   
   if (data.length === 0) {
@@ -669,6 +700,14 @@ function drawLineChart(canvas, data, labels) {
     ctx.textAlign = 'center';
     ctx.fillText(labels[i] || '', x, h - pad.bottom + 18);
   });
+}
+
+function redrawFromCache(canvas) {
+  const cached = lastChartCall[canvas.id];
+  if (!cached) return;
+  if (cached.type === 'bar') drawBarChart(canvas, cached.data, cached.labels);
+  else if (cached.type === 'pie') drawPieChart(canvas, cached.data, cached.labels);
+  else if (cached.type === 'line') drawLineChart(canvas, cached.data, cached.labels);
 }
 
 // ============================================================
@@ -956,10 +995,17 @@ loadStats();
 loadNotifBadge();
 setInterval(loadNotifBadge, 60000);
 
+// FIX: previously every resize re-ran loadStats(), which re-hit the API
+// (4+ requests) just to redraw canvases. A resize only changes layout
+// width, not the underlying data, so just redraw from the cached
+// data/labels for whichever canvases are currently visible.
 let resizeTimeout;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimeout);
-  resizeTimeout = setTimeout(() => loadStats(), 300);
+  resizeTimeout = setTimeout(() => {
+    redrawFromCache(document.getElementById('mainChart'));
+    redrawFromCache(document.getElementById('subjectChart'));
+  }, 300);
 });
 </script>
 </body>
