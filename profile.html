@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile — Timbr</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700&family=DM+Mono&family=Cabinet+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #05080f;
+  --surface: #0b0f1a;
+  --surface2: #111827;
+  --surface3: #161e2e;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.11);
+  --accent: #00d4aa;
+  --accent2: #00b894;
+  --accent-dim: rgba(0,212,170,0.08);
+  --white: #f0f4f8;
+  --gray: #7a8899;
+  --gray2: #a0adb8;
+  --red: #f0566a;
+  --red-dim: rgba(240,86,106,0.09);
+  --green: #10d48e;
+  --green-dim: rgba(16,212,142,0.09);
+  --orange: #f59e0b;
+  --orange-dim: rgba(245,158,11,0.09);
+  --radius: 9px;
+  --radius-lg: 13px;
+  --transition: .18s cubic-bezier(.4,0,.2,1);
+  --header-h: 64px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Cabinet Grotesk', sans-serif;
+  background: var(--bg);
+  color: var(--white);
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+h1, h2, h3, h4 { font-family: 'Cormorant Garamond', serif; }
+a { color: var(--accent); text-decoration: none; }
+
+/* Header */
+.header {
+  position: fixed; top:0; left:0; right:0;
+  height: var(--header-h);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 0 24px; z-index: 100;
+  transition: transform .3s ease;
+}
+.header.hidden { transform: translateY(-100%); }
+.header-left { display: flex; align-items: center; gap: 16px; }
+.hamburger {
+  background: none; border: none; cursor: pointer;
+  padding: 8px; display: flex; align-items: center;
+  color: var(--gray2);
+}
+.hamburger:hover { color: var(--white); }
+.logo { display: flex; align-items: center; gap: 8px; }
+.logo img { height: 28px; }
+.logo span { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 700; }
+.header-right { display: flex; align-items: center; gap: 16px; }
+.notif-btn {
+  background: none; border: none; cursor: pointer;
+  padding: 8px; color: var(--gray2); position: relative;
+}
+.notif-btn:hover { color: var(--white); }
+.notif-badge {
+  position: absolute; top:2px; right:2px;
+  background: var(--red); color: #fff;
+  font-size: 10px; font-weight: 700;
+  min-width: 18px; height: 18px;
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  display: none;
+}
+.notif-badge.show { display: flex; }
+.profile-btn {
+  display: flex; align-items: center; gap: 8px;
+  background: none; border: none; cursor: pointer;
+  color: var(--gray2); padding: 6px 10px;
+  border-radius: var(--radius);
+  transition: background var(--transition);
+}
+.profile-btn:hover { background: var(--surface2); color: var(--white); }
+.profile-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px;
+  color: var(--accent);
+}
+.profile-dropdown {
+  position: absolute; top:60px; right:20px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  padding: 8px; min-width: 200px;
+  display: none; z-index: 200;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+.profile-dropdown.show { display: block; }
+.profile-dropdown a, .profile-dropdown button {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 10px 14px;
+  border-radius: var(--radius);
+  color: var(--gray2); font-size: 14px;
+  background: none; border: none; cursor: pointer;
+  font-family: 'Cabinet Grotesk', sans-serif;
+  text-align: left;
+  transition: all var(--transition);
+}
+.profile-dropdown a:hover, .profile-dropdown button:hover {
+  background: var(--surface2); color: var(--white);
+}
+.profile-dropdown .divider { height: 1px; background: var(--border); margin: 6px 0; }
+
+/* Sidebar */
+.sidebar-overlay {
+  position: fixed; inset:0;
+  background: rgba(0,0,0,0.5);
+  z-index: 150; display: none;
+}
+.sidebar-overlay.show { display: block; }
+.sidebar {
+  position: fixed; top:0; left:-280px;
+  width: 260px; height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  z-index: 160;
+  transition: left .25s ease;
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+}
+.sidebar.open { left: 0; }
+.sidebar-header {
+  padding: 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+}
+.sidebar-user {
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+}
+.sidebar-user .name { font-weight: 600; font-size: 15px; }
+.sidebar-user .email { font-size: 12px; color: var(--gray); }
+.sidebar-nav { flex:1; padding: 12px; }
+.sidebar-nav a {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border-radius: var(--radius);
+  color: var(--gray2); font-size: 14px; font-weight: 500;
+  transition: all var(--transition); margin-bottom: 2px;
+}
+.sidebar-nav a:hover, .sidebar-nav a.active {
+  background: var(--accent-dim); color: var(--accent);
+}
+.sidebar-nav a svg { width: 20px; height: 20px; flex-shrink: 0; }
+.sidebar-footer { padding: 12px 20px; border-top: 1px solid var(--border); }
+
+/* Main */
+.main-content {
+  margin-left: 0;
+  margin-top: var(--header-h);
+  padding: 32px 24px;
+  flex: 1;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+}
+.page-title { font-size: 28px; margin-bottom: 24px; }
+
+/* Profile Card */
+.profile-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+.profile-avatar-lg {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  margin: 0 auto 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; font-weight: 700;
+  color: var(--accent);
+}
+.profile-name { font-size: 22px; font-weight: 700; }
+.profile-username { color: var(--gray); font-size: 14px; margin-bottom: 4px; }
+.profile-role {
+  display: inline-block; padding: 3px 12px;
+  border-radius: 20px; font-size: 11px; font-weight: 600;
+  background: var(--accent-dim); color: var(--accent);
+  margin-top: 6px;
+}
+
+/* Section */
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.section h3 { font-size: 18px; margin-bottom: 16px; }
+.form-group { margin-bottom: 16px; }
+.form-group label {
+  display: block; font-size: 13px; font-weight: 600;
+  color: var(--gray2); margin-bottom: 6px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.form-group input {
+  width: 100%; padding: 12px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--white);
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 15px;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.form-group input:focus { border-color: var(--accent); }
+.form-group input:disabled {
+  opacity: 0.6; cursor: not-allowed;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 18px; border-radius: var(--radius);
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-weight: 600; font-size: 13px;
+  border: none; cursor: pointer;
+  transition: all var(--transition);
+}
+.btn-primary { background: var(--accent); color: #05080f; }
+.btn-primary:hover { background: var(--accent2); }
+.btn-outline {
+  background: transparent; border: 1px solid var(--border2);
+  color: var(--white);
+}
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+.btn-danger { background: var(--red); color: #fff; }
+.btn-danger:hover { opacity: 0.85; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.alert-msg {
+  padding: 10px 14px; border-radius: var(--radius);
+  font-size: 13px; margin-bottom: 16px; display: none;
+}
+.alert-msg.error { background: var(--red-dim); color: var(--red); border: 1px solid rgba(240,86,106,0.3); display: block; }
+.alert-msg.success { background: var(--green-dim); color: var(--green); border: 1px solid rgba(16,212,142,0.3); display: block; }
+
+/* Skeleton */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface2) 25%, var(--surface3) 50%, var(--surface2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius);
+}
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.skeleton-text { height: 14px; margin-bottom: 8px; width: 80%; }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  padding: 12px 20px; border-radius: var(--radius);
+  font-size: 14px; font-weight: 500; z-index: 300;
+  opacity: 0; transform: translateY(10px);
+  transition: all .3s ease; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast-success { background: var(--green); color: #000; }
+.toast-error { background: var(--red); color: #fff; }
+
+/* Footer */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 40px 24px; margin-top: auto;
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px; max-width: 1000px; margin: 0 auto;
+}
+.footer-col h4 {
+  font-size: 14px; margin-bottom: 12px;
+  color: var(--gray2); font-family: 'Cabinet Grotesk', sans-serif;
+  font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.footer-col a {
+  display: block; color: var(--gray);
+  font-size: 13px; margin-bottom: 6px;
+  transition: color var(--transition);
+}
+.footer-col a:hover { color: var(--white); }
+.footer-bottom {
+  text-align: center; padding-top: 24px;
+  margin-top: 24px; border-top: 1px solid var(--border);
+  color: var(--gray); font-size: 12px;
+  max-width: 1000px; margin-left: auto; margin-right: auto;
+}
+
+@media (max-width: 860px) {
+  .footer-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .footer-grid { grid-template-columns: 1fr; }
+  .main-content { padding: 20px 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header" id="header">
+  <div class="header-left">
+    <button class="hamburger" id="hamburgerBtn" aria-label="Menu">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <a href="/dashboard.html" class="logo">
+      <img src="/images/timbr.png" height="28" alt="Timbr">
+      <span>Timbr</span>
+    </a>
+  </div>
+  <div class="header-right">
+    <button class="notif-btn" onclick="window.location.href='/notifications.html'">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span class="notif-badge" id="notifBadge">0</span>
+    </button>
+    <div style="position:relative;">
+      <button class="profile-btn" id="profileBtn">
+        <div class="profile-avatar" id="profileAvatar">S</div>
+        <span id="profileName">Student</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="profile-dropdown" id="profileDropdown">
+        <a href="/profile.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile</a>
+        <a href="/notifications.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>Notifications</a>
+        <div class="divider"></div>
+        <button onclick="logout()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign Out</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Sidebar Overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <img src="/images/timbr.png" height="24" alt="Timbr">
+    <span style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;">Timbr</span>
+  </div>
+  <div class="sidebar-user">
+    <div class="name" id="sidebarName">Student</div>
+    <div class="email" id="sidebarEmail">student@timbr.com</div>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="/dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+    <a href="/sessions.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Study Sessions</a>
+    <a href="/tasks.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Tasks</a>
+    <a href="/statistics.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Statistics</a>
+    <a href="/leaderboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 6 9 6 9z"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 18 9 18 9z"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>Leaderboard</a>
+    <a href="/notifications.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Notifications</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button onclick="logout()" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--gray2);cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:500;">Sign Out</button>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<main class="main-content" id="mainContent">
+  <h1 class="page-title">Profile</h1>
+
+  <!-- Profile Card -->
+  <div class="profile-card" id="profileCard">
+    <div class="skeleton skeleton-text" style="width:80px;height:80px;border-radius:50%;margin:0 auto 16px;"></div>
+    <div class="skeleton skeleton-text" style="width:150px;margin:0 auto;"></div>
+    <div class="skeleton skeleton-text short" style="width:100px;margin:8px auto;"></div>
+  </div>
+
+  <!-- Edit Profile -->
+  <div class="section">
+    <h3>Edit Profile</h3>
+    <div class="alert-msg" id="profileAlert"></div>
+    <form id="profileForm" autocomplete="off">
+      <div class="form-group">
+        <label for="pName">Full Name</label>
+        <input type="text" id="pName" required>
+      </div>
+      <div class="form-group">
+        <label for="pUsername">Username</label>
+        <input type="text" id="pUsername" required>
+      </div>
+      <div class="form-group">
+        <label for="pEmail">Email</label>
+        <input type="email" id="pEmail" disabled>
+      </div>
+      <button type="submit" class="btn btn-primary" id="profileSaveBtn">Save Changes</button>
+    </form>
+  </div>
+
+  <!-- Change Password -->
+  <div class="section">
+    <h3>Change Password</h3>
+    <div class="alert-msg" id="passwordAlert"></div>
+    <form id="passwordForm" autocomplete="off">
+      <div class="form-group">
+        <label for="currentPass">Current Password</label>
+        <input type="password" id="currentPass" required>
+      </div>
+      <div class="form-group">
+        <label for="newPass">New Password</label>
+        <input type="password" id="newPass" required minlength="6">
+      </div>
+      <div class="form-group">
+        <label for="confirmPass">Confirm New Password</label>
+        <input type="password" id="confirmPass" required minlength="6">
+      </div>
+      <button type="submit" class="btn btn-outline" id="passwordBtn">Update Password</button>
+    </form>
+  </div>
+
+  <!-- Download Backup -->
+  <div class="section">
+    <h3>Data Backup</h3>
+    <p style="color:var(--gray);font-size:13px;margin-bottom:16px;">Download all your study data as a TXT file. Generated instantly — never stored on the server.</p>
+    <button class="btn btn-outline" onclick="downloadBackup()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download TXT Backup
+    </button>
+  </div>
+</main>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-col"><h4>Timbr</h4><p style="color:var(--gray);font-size:13px;">Track every minute. Build lasting habits.</p></div>
+    <div class="footer-col"><h4>Platform</h4><a href="/dashboard.html">Dashboard</a><a href="/sessions.html">Sessions</a><a href="/statistics.html">Statistics</a></div>
+    <div class="footer-col"><h4>Support</h4><a href="mailto:text.me.md.alamin@gmail.com">Contact Admin</a><a href="/leaderboard.html">Leaderboard</a></div>
+    <div class="footer-col"><h4>Legal</h4><a href="#">Privacy Policy</a><a href="#">Terms of Service</a></div>
+  </div>
+  <div class="footer-bottom">&copy; 2024 Timbr. All rights reserved.</div>
+</footer>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// Auth Check
+const token = localStorage.getItem('timbr_token');
+const user = JSON.parse(localStorage.getItem('timbr_user') || 'null');
+if (!token || !user) { window.location.href = '/login.html'; }
+
+const API_BASE = '/api';
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = String(s || '');
+  return d.innerHTML;
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast toast-${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+async function api(method, path, body) {
+  try {
+    const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }};
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(API_BASE + path, opts);
+    const data = await res.json();
+    return { ok: res.ok, data, status: res.status };
+  } catch(e) {
+    return { ok: false, data: { error: 'Network error. Please try again.' }, status: 0 };
+  }
+}
+
+function logout() {
+  localStorage.removeItem('timbr_token');
+  localStorage.removeItem('timbr_user');
+  window.location.href = '/login.html';
+}
+
+// UI Setup
+document.getElementById('profileName').textContent = user.name || 'Student';
+document.getElementById('sidebarName').textContent = user.name || 'Student';
+document.getElementById('sidebarEmail').textContent = user.email || '';
+document.getElementById('profileAvatar').textContent = (user.name || 'S').charAt(0).toUpperCase();
+
+// Header scroll
+let lastScroll = 0;
+window.addEventListener('scroll', () => {
+  const current = window.pageYOffset;
+  document.getElementById('header').classList.toggle('hidden', current > lastScroll && current > 70);
+  lastScroll = current;
+});
+
+// Sidebar
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('sidebarOverlay');
+document.getElementById('hamburgerBtn').addEventListener('click', () => {
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('show');
+});
+overlay.addEventListener('click', () => { sidebar.classList.remove('open'); overlay.classList.remove('show'); });
+
+// Profile dropdown
+document.getElementById('profileBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  document.getElementById('profileDropdown').classList.toggle('show');
+});
+document.addEventListener('click', () => document.getElementById('profileDropdown').classList.remove('show'));
+
+// ============================================================
+// Load Profile
+// ============================================================
+async function loadProfile() {
+  const res = await api('GET', '/user/profile');
+  
+  if (!res.ok) {
+    showToast('Failed to load profile', 'error');
+    return;
+  }
+
+  const profile = res.data;
+  
+  // Update profile card
+  document.getElementById('profileCard').innerHTML = `
+    <div class="profile-avatar-lg">${esc((profile.name || 'S').charAt(0).toUpperCase())}</div>
+    <div class="profile-name">${esc(profile.name)}</div>
+    <div class="profile-username">@${esc(profile.username)}</div>
+    <div class="profile-role">${esc(profile.role === 'admin' ? 'Administrator' : 'Student')}</div>
+    <div style="margin-top:12px;font-size:12px;color:var(--gray);">Joined ${new Date(profile.created_at).toLocaleDateString()}</div>
+  `;
+
+  // Update form
+  document.getElementById('pName').value = profile.name || '';
+  document.getElementById('pUsername').value = profile.username || '';
+  document.getElementById('pEmail').value = profile.email || '';
+
+  // Update sidebar
+  document.getElementById('sidebarName').textContent = profile.name || 'Student';
+  document.getElementById('sidebarEmail').textContent = profile.email || '';
+  document.getElementById('profileName').textContent = profile.name || 'Student';
+  document.getElementById('profileAvatar').textContent = (profile.name || 'S').charAt(0).toUpperCase();
+
+  // Update localStorage
+  user.name = profile.name;
+  user.username = profile.username;
+  localStorage.setItem('timbr_user', JSON.stringify(user));
+}
+
+// ============================================================
+// Update Profile
+// ============================================================
+document.getElementById('profileForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const alertEl = document.getElementById('profileAlert');
+  alertEl.className = 'alert-msg';
+  
+  const name = document.getElementById('pName').value.trim();
+  const username = document.getElementById('pUsername').value.trim().toLowerCase();
+  
+  if (!name || !username) {
+    alertEl.textContent = 'Name and username are required';
+    alertEl.className = 'alert-msg error';
+    return;
+  }
+
+  const btn = document.getElementById('profileSaveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  const res = await api('PUT', '/user/profile', { name, username });
+
+  btn.disabled = false;
+  btn.textContent = 'Save Changes';
+
+  if (!res.ok) {
+    alertEl.textContent = res.data.error || 'Failed to update';
+    alertEl.className = 'alert-msg error';
+    return;
+  }
+
+  alertEl.textContent = 'Profile updated successfully';
+  alertEl.className = 'alert-msg success';
+  showToast('Profile updated');
+  loadProfile();
+  
+  setTimeout(() => { alertEl.className = 'alert-msg'; }, 3000);
+});
+
+// ============================================================
+// Change Password
+// ============================================================
+document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const alertEl = document.getElementById('passwordAlert');
+  alertEl.className = 'alert-msg';
+  
+  const currentPass = document.getElementById('currentPass').value;
+  const newPass = document.getElementById('newPass').value;
+  const confirmPass = document.getElementById('confirmPass').value;
+  
+  if (!currentPass || !newPass || !confirmPass) {
+    alertEl.textContent = 'All password fields are required';
+    alertEl.className = 'alert-msg error';
+    return;
+  }
+  
+  if (newPass !== confirmPass) {
+    alertEl.textContent = 'New passwords do not match';
+    alertEl.className = 'alert-msg error';
+    return;
+  }
+  
+  if (newPass.length < 6) {
+    alertEl.textContent = 'New password must be at least 6 characters';
+    alertEl.className = 'alert-msg error';
+    return;
+  }
+
+  const btn = document.getElementById('passwordBtn');
+  btn.disabled = true;
+  btn.textContent = 'Updating...';
+
+  const res = await api('PUT', '/user/change-password', {
+    oldPassword: currentPass,
+    newPassword: newPass
+  });
+
+  btn.disabled = false;
+  btn.textContent = 'Update Password';
+
+  if (!res.ok) {
+    alertEl.textContent = res.data.error || 'Failed to change password';
+    alertEl.className = 'alert-msg error';
+    return;
+  }
+
+  alertEl.textContent = 'Password changed successfully';
+  alertEl.className = 'alert-msg success';
+  showToast('Password updated');
+  document.getElementById('passwordForm').reset();
+  
+  setTimeout(() => { alertEl.className = 'alert-msg'; }, 3000);
+});
+
+// ============================================================
+// Download Backup
+// ============================================================
+async function downloadBackup() {
+  showToast('Generating backup...');
+  
+  try {
+    const res = await fetch(API_BASE + '/user/backup', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    
+    if (!res.ok) {
+      showToast('Failed to generate backup', 'error');
+      return;
+    }
+    
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `timbr-backup-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showToast('Backup downloaded');
+  } catch (e) {
+    showToast('Failed to download backup', 'error');
+  }
+}
+
+// ============================================================
+// Notifications Badge
+// ============================================================
+async function loadNotifBadge() {
+  const res = await api('GET', '/notifications/unread-count');
+  if (res.ok && res.data.count > 0) {
+    const badge = document.getElementById('notifBadge');
+    badge.textContent = res.data.count > 99 ? '99+' : res.data.count;
+    badge.classList.add('show');
+  }
+}
+
+// ============================================================
+// Init
+// ============================================================
+loadProfile();
+loadNotifBadge();
+</script>
+</body>
+</html>
