@@ -1,6 +1,6 @@
 // ============================================================
-// TIMBR - Complete Fixed Backend API
-// functions/api/[[route]].js
+// TIMBR - Complete Backend API
+// Single file: functions/api/[[route]].js
 // ============================================================
 
 // --- Crypto Helpers ---
@@ -171,7 +171,6 @@ async function ensureTables(db) {
     )
   `).run();
 
-  // Indexes
   await db.prepare(`CREATE INDEX IF NOT EXISTS idx_sessions_user ON study_sessions(user_id)`).run();
   await db.prepare(`CREATE INDEX IF NOT EXISTS idx_sessions_date ON study_sessions(study_date)`).run();
   await db.prepare(`CREATE INDEX IF NOT EXISTS idx_sessions_status ON study_sessions(status)`).run();
@@ -181,7 +180,6 @@ async function ensureTables(db) {
   await db.prepare(`CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)`).run();
   await db.prepare(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`).run();
 
-  // Seed admin
   const adminHash = await sha256('ADMIN123');
   await db.prepare(`
     INSERT OR IGNORE INTO users (username, name, email, password_hash, role, approved, blocked)
@@ -215,61 +213,41 @@ async function runMigrations(db) {
 // ROUTE HANDLERS
 // ============================================================
 
-// Auth routes (unchanged - same as previous version)
 async function handleAuth(method, path, body, db) {
   if (method === 'POST' && path === '/auth/register') {
     const { username, name, email, password, device_fingerprint } = body;
     if (!username || !name || !email || !password) return err('All fields required', 400);
-    
     if (device_fingerprint) {
       const existing = await db.prepare('SELECT id FROM users WHERE device_fingerprint = ?').bind(device_fingerprint).first();
       if (existing) return err('An account already exists on this device', 400);
     }
-    
     const existingUser = await db.prepare('SELECT id FROM users WHERE username = ? OR email = ?').bind(username, email).first();
     if (existingUser) return err('Username or email already exists', 400);
-    
     const hash = await sha256(password);
     const result = await db.prepare(
       'INSERT INTO users (username, name, email, password_hash, device_fingerprint, approved) VALUES (?, ?, ?, ?, ?, 0)'
     ).bind(username, name, email, hash, device_fingerprint || null).run();
-    
     await db.prepare('INSERT INTO audit_logs (action, details, target_user) VALUES (?, ?, ?)')
       .bind('User registered', `Username: ${username}`, result.meta.last_row_id).run();
-    
     return json({ message: 'Registration successful. Awaiting approval.' }, 201);
   }
 
   if (method === 'POST' && path === '/auth/login') {
     const { email, password } = body;
     if (!email || !password) return err('Email and password required', 400);
-    
     const user = await db.prepare('SELECT * FROM users WHERE email = ?').bind(email).first();
     if (!user) return err('Invalid credentials', 401);
-    
     if (user.blocked) return err('Account is blocked. Contact admin.', 403);
     if (!user.approved) return err('Account not yet approved. Please wait.', 403);
-    
     const hash = await sha256(password);
     if (hash !== user.password_hash) return err('Invalid credentials', 401);
-    
     const token = await signToken({
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      role: user.role,
+      id: user.id, username: user.username, email: user.email, role: user.role,
       exp: Date.now() + 30 * 24 * 60 * 60 * 1000
     });
-    
     return json({
       token,
-      user: {
-        id: user.id,
-        username: user.username,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }
+      user: { id: user.id, username: user.username, name: user.name, email: user.email, role: user.role }
     });
   }
 
@@ -277,10 +255,7 @@ async function handleAuth(method, path, body, db) {
     const { key } = body;
     const setting = await db.prepare("SELECT value FROM settings WHERE key = 'master_key'").first();
     if (!setting || key !== setting.value) return err('Invalid master key', 403);
-    const token = await signToken({
-      master: true,
-      exp: Date.now() + 30 * 24 * 60 * 60 * 1000
-    });
+    const token = await signToken({ master: true, exp: Date.now() + 30 * 24 * 60 * 60 * 1000 });
     return json({ token });
   }
 
@@ -295,7 +270,6 @@ async function handleAuth(method, path, body, db) {
   return err('Auth route not found', 404);
 }
 
-// User routes (unchanged - same as previous version)
 async function handleUser(method, path, body, db, user) {
   const userId = user.id;
 
@@ -329,15 +303,12 @@ async function handleUser(method, path, body, db, user) {
 
   if (method === 'GET' && path === '/user/dashboard') {
     const today = new Date().toISOString().split('T')[0];
-    
     const todaySessions = await db.prepare(
       "SELECT * FROM study_sessions WHERE user_id = ? AND study_date = ? ORDER BY created_at DESC"
     ).bind(userId, today).all();
-    
     const recentSessions = await db.prepare(
       "SELECT * FROM study_sessions WHERE user_id = ? ORDER BY created_at DESC LIMIT 10"
     ).bind(userId).all();
-    
     const notifications = await db.prepare(`
       SELECT n.*, CASE WHEN nr.id IS NOT NULL THEN 1 ELSE 0 END as is_read
       FROM notifications n
@@ -346,27 +317,20 @@ async function handleUser(method, path, body, db, user) {
         AND (n.audience = 'Everyone' OR n.audience = 'Students')
         AND (n.start_date IS NULL OR n.start_date <= datetime('now'))
         AND (n.end_date IS NULL OR n.end_date >= datetime('now'))
-      ORDER BY n.pinned DESC, n.created_at DESC
-      LIMIT 5
+      ORDER BY n.pinned DESC, n.created_at DESC LIMIT 5
     `).bind(userId).all();
-    
     const weekStart = new Date();
     weekStart.setDate(weekStart.getDate() - weekStart.getDay());
     const weekStartStr = weekStart.toISOString().split('T')[0];
-    
     const weeklyStats = await db.prepare(`
       SELECT 
         COUNT(*) as total_sessions,
         SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) as completed_sessions,
-        COALESCE(SUM(
-          CASE WHEN actual_end IS NOT NULL AND actual_start IS NOT NULL
+        COALESCE(SUM(CASE WHEN actual_end IS NOT NULL AND actual_start IS NOT NULL
           THEN (strftime('%s', actual_end) - strftime('%s', actual_start)) / 60.0 - COALESCE(lost_minutes, 0)
-          ELSE 0 END
-        ), 0) as total_minutes
-      FROM study_sessions 
-      WHERE user_id = ? AND study_date >= ?
+          ELSE 0 END), 0) as total_minutes
+      FROM study_sessions WHERE user_id = ? AND study_date >= ?
     `).bind(userId, weekStartStr).first();
-    
     return json({
       today_sessions: todaySessions.results,
       recent_sessions: recentSessions.results,
@@ -379,12 +343,8 @@ async function handleUser(method, path, body, db, user) {
     const sessions = await db.prepare('SELECT * FROM study_sessions WHERE user_id = ? ORDER BY created_at').bind(userId).all();
     const tasks = await db.prepare('SELECT * FROM study_tasks WHERE user_id = ? ORDER BY created_at').bind(userId).all();
     const profile = await db.prepare('SELECT username, name, email, created_at FROM users WHERE id = ?').bind(userId).first();
-    
-    let txt = `TIMBR - STUDY BACKUP\n`;
-    txt += `Generated: ${new Date().toISOString()}\n`;
-    txt += `${'='.repeat(50)}\n\n`;
-    txt += `PROFILE\n${'-'.repeat(30)}\n`;
-    txt += `Username: ${profile.username}\nName: ${profile.name}\nEmail: ${profile.email}\nJoined: ${profile.created_at}\n\n`;
+    let txt = `TIMBR - STUDY BACKUP\nGenerated: ${new Date().toISOString()}\n${'='.repeat(50)}\n\n`;
+    txt += `PROFILE\n${'-'.repeat(30)}\nUsername: ${profile.username}\nName: ${profile.name}\nEmail: ${profile.email}\nJoined: ${profile.created_at}\n\n`;
     txt += `STUDY SESSIONS (${sessions.results.length})\n${'-'.repeat(30)}\n`;
     for (const s of sessions.results) {
       txt += `Title: ${s.title}\nSubject: ${s.subject}\nDate: ${s.study_date}\nStatus: ${s.status}\n`;
@@ -398,7 +358,6 @@ async function handleUser(method, path, body, db, user) {
     for (const t of tasks.results) {
       txt += `[${t.completed ? '✓' : ' '}] ${t.title} (${t.subject})\n`;
     }
-    
     return new Response(txt, {
       headers: { ...corsHeaders, 'Content-Type': 'text/plain', 'Content-Disposition': 'attachment; filename="timbr-backup.txt"' }
     });
@@ -407,7 +366,6 @@ async function handleUser(method, path, body, db, user) {
   return err('User route not found', 404);
 }
 
-// Session routes (unchanged)
 async function handleSessions(method, path, body, db, user) {
   const userId = user.id;
   const sessionMatch = path.match(/^\/sessions\/(\d+)$/);
@@ -421,16 +379,13 @@ async function handleSessions(method, path, body, db, user) {
     
     let whereClause = 'WHERE user_id = ?';
     const params = [userId];
-    
     if (date) { whereClause += ' AND study_date = ?'; params.push(date); }
     if (subject) { whereClause += ' AND subject = ?'; params.push(subject); }
     if (status) { whereClause += ' AND status = ?'; params.push(status); }
     
     const countResult = await db.prepare(`SELECT COUNT(*) as count FROM study_sessions ${whereClause}`).bind(...params).first();
-    
     const sql = `SELECT * FROM study_sessions ${whereClause} ORDER BY study_date DESC, created_at DESC LIMIT ? OFFSET ?`;
     params.push(limit, (page - 1) * limit);
-    
     const sessions = await db.prepare(sql).bind(...params).all();
     
     return json({ sessions: sessions.results, total: countResult.count, page, limit });
@@ -439,11 +394,9 @@ async function handleSessions(method, path, body, db, user) {
   if (method === 'POST' && path === '/sessions') {
     const { title, subject, planned_start, planned_end, study_date, note, status } = body;
     if (!title || !subject || !study_date) return err('Title, subject, and date required', 400);
-    
     const result = await db.prepare(
       'INSERT INTO study_sessions (user_id, title, subject, planned_start, planned_end, study_date, note, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     ).bind(userId, title, subject, planned_start || null, planned_end || null, study_date, note || null, status || 'Planned').run();
-    
     return json({ id: result.meta.last_row_id, message: 'Session created' }, 201);
   }
 
@@ -457,7 +410,6 @@ async function handleSessions(method, path, body, db, user) {
     const id = sessionMatch[1];
     const existing = await db.prepare('SELECT id FROM study_sessions WHERE id = ? AND user_id = ?').bind(id, userId).first();
     if (!existing) return err('Session not found', 404);
-    
     const { title, subject, planned_start, planned_end, study_date, actual_start, actual_end, lost_minutes, lost_reason, note, status } = body;
     await db.prepare(`
       UPDATE study_sessions SET 
@@ -468,7 +420,6 @@ async function handleSessions(method, path, body, db, user) {
         lost_reason = COALESCE(?, lost_reason), note = COALESCE(?, note), status = COALESCE(?, status)
       WHERE id = ? AND user_id = ?
     `).bind(title, subject, planned_start, planned_end, study_date, actual_start, actual_end, lost_minutes, lost_reason, note, status, id, userId).run();
-    
     return json({ message: 'Session updated' });
   }
 
@@ -480,7 +431,6 @@ async function handleSessions(method, path, body, db, user) {
   return err('Session route not found', 404);
 }
 
-// Task routes (unchanged)
 async function handleTasks(method, path, body, db, user) {
   const userId = user.id;
   const taskMatch = path.match(/^\/tasks\/(\d+)$/);
@@ -489,32 +439,25 @@ async function handleTasks(method, path, body, db, user) {
     const tasks = await db.prepare('SELECT * FROM study_tasks WHERE user_id = ? ORDER BY completed ASC, created_at DESC').bind(userId).all();
     return json(tasks.results);
   }
-
   if (method === 'POST' && path === '/tasks') {
     const { title, subject } = body;
     if (!title || !subject) return err('Title and subject required', 400);
     const result = await db.prepare('INSERT INTO study_tasks (user_id, title, subject) VALUES (?, ?, ?)').bind(userId, title, subject).run();
     return json({ id: result.meta.last_row_id, message: 'Task created' }, 201);
   }
-
   if (method === 'PUT' && taskMatch) {
     const { title, subject, completed } = body;
-    await db.prepare(`
-      UPDATE study_tasks SET title = COALESCE(?, title), subject = COALESCE(?, subject), completed = COALESCE(?, completed)
-      WHERE id = ? AND user_id = ?
-    `).bind(title || null, subject || null, completed !== undefined ? completed : null, taskMatch[1], userId).run();
+    await db.prepare('UPDATE study_tasks SET title = COALESCE(?, title), subject = COALESCE(?, subject), completed = COALESCE(?, completed) WHERE id = ? AND user_id = ?')
+      .bind(title || null, subject || null, completed !== undefined ? completed : null, taskMatch[1], userId).run();
     return json({ message: 'Task updated' });
   }
-
   if (method === 'DELETE' && taskMatch) {
     await db.prepare('DELETE FROM study_tasks WHERE id = ? AND user_id = ?').bind(taskMatch[1], userId).run();
     return json({ message: 'Task deleted' });
   }
-
   return err('Task route not found', 404);
 }
 
-// Notification routes (unchanged)
 async function handleNotifications(method, path, body, db, user) {
   const userId = user.id;
   const notifMatch = path.match(/^\/notifications\/(\d+)\/read$/);
@@ -530,10 +473,8 @@ async function handleNotifications(method, path, body, db, user) {
         AND (n.end_date IS NULL OR n.end_date >= datetime('now'))
       ORDER BY n.pinned DESC, n.created_at DESC
     `).bind(userId).all();
-    
     return json(notifications.results);
   }
-
   if (method === 'GET' && path === '/notifications/unread-count') {
     const result = await db.prepare(`
       SELECT COUNT(*) as count FROM notifications n
@@ -543,29 +484,23 @@ async function handleNotifications(method, path, body, db, user) {
         AND (n.start_date IS NULL OR n.start_date <= datetime('now'))
         AND (n.end_date IS NULL OR n.end_date >= datetime('now'))
     `).bind(userId).first();
-    
     return json({ count: result.count });
   }
-
   if (method === 'POST' && notifMatch) {
     await db.prepare('INSERT OR IGNORE INTO notification_reads (notification_id, user_id) VALUES (?, ?)')
       .bind(notifMatch[1], userId).run();
     return json({ message: 'Marked as read' });
   }
-
   return err('Notification route not found', 404);
 }
 
-// Statistics routes (unchanged)
 async function handleStats(method, path, body, db, user) {
   const userId = user.id;
   
   if (method === 'GET' && path === '/stats/daily') {
     const targetDate = body.date || new Date().toISOString().split('T')[0];
-    
     const stats = await db.prepare(`
-      SELECT 
-        subject, COUNT(*) as session_count,
+      SELECT subject, COUNT(*) as session_count,
         SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) as completed,
         SUM(CASE WHEN status = 'Partial' THEN 1 ELSE 0 END) as partial,
         SUM(CASE WHEN status = 'Missed' THEN 1 ELSE 0 END) as missed,
@@ -573,75 +508,52 @@ async function handleStats(method, path, body, db, user) {
           THEN (strftime('%s', actual_end) - strftime('%s', actual_start)) / 60.0 - COALESCE(lost_minutes, 0)
           ELSE 0 END), 0) as actual_minutes,
         COALESCE(SUM(lost_minutes), 0) as lost_minutes
-      FROM study_sessions
-      WHERE user_id = ? AND study_date = ?
-      GROUP BY subject
+      FROM study_sessions WHERE user_id = ? AND study_date = ? GROUP BY subject
     `).bind(userId, targetDate).all();
-    
     return json({ date: targetDate, stats: stats.results });
   }
-
   if (method === 'GET' && path === '/stats/weekly') {
-    const weekStart = new Date();
-    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay());
     const weekStartStr = weekStart.toISOString().split('T')[0];
-    
     const stats = await db.prepare(`
-      SELECT 
-        study_date, COUNT(*) as session_count,
+      SELECT study_date, COUNT(*) as session_count,
         SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) as completed,
         COALESCE(SUM(CASE WHEN actual_end IS NOT NULL AND actual_start IS NOT NULL
           THEN (strftime('%s', actual_end) - strftime('%s', actual_start)) / 60.0 - COALESCE(lost_minutes, 0)
           ELSE 0 END), 0) as actual_minutes,
         COALESCE(SUM(lost_minutes), 0) as lost_minutes
-      FROM study_sessions
-      WHERE user_id = ? AND study_date >= ?
-      GROUP BY study_date ORDER BY study_date
+      FROM study_sessions WHERE user_id = ? AND study_date >= ? GROUP BY study_date ORDER BY study_date
     `).bind(userId, weekStartStr).all();
-    
     return json({ week_start: weekStartStr, stats: stats.results });
   }
-
   if (method === 'GET' && path === '/stats/monthly') {
-    const monthStart = new Date();
-    monthStart.setDate(1);
+    const monthStart = new Date(); monthStart.setDate(1);
     const monthStartStr = monthStart.toISOString().split('T')[0];
-    
     const stats = await db.prepare(`
-      SELECT 
-        subject, COUNT(*) as session_count,
+      SELECT subject, COUNT(*) as session_count,
         SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) as completed,
         COALESCE(SUM(CASE WHEN actual_end IS NOT NULL AND actual_start IS NOT NULL
           THEN (strftime('%s', actual_end) - strftime('%s', actual_start)) / 60.0 - COALESCE(lost_minutes, 0)
           ELSE 0 END), 0) as actual_minutes
-      FROM study_sessions
-      WHERE user_id = ? AND study_date >= ?
-      GROUP BY subject
+      FROM study_sessions WHERE user_id = ? AND study_date >= ? GROUP BY subject
     `).bind(userId, monthStartStr).all();
-    
     return json({ month_start: monthStartStr, stats: stats.results });
   }
-
   if (method === 'GET' && path === '/stats/subject-distribution') {
     const stats = await db.prepare(`
-      SELECT 
-        subject, COUNT(*) as total_sessions,
+      SELECT subject, COUNT(*) as total_sessions,
         COALESCE(SUM(CASE WHEN actual_end IS NOT NULL AND actual_start IS NOT NULL
           THEN (strftime('%s', actual_end) - strftime('%s', actual_start)) / 60.0 - COALESCE(lost_minutes, 0)
           ELSE 0 END), 0) as total_minutes
-      FROM study_sessions
-      WHERE user_id = ?
-      GROUP BY subject ORDER BY total_minutes DESC
+      FROM study_sessions WHERE user_id = ? GROUP BY subject ORDER BY total_minutes DESC
     `).bind(userId).all();
-    
     return json(stats.results);
   }
-
   return err('Stats route not found', 404);
 }
 
 // ============================================================
-// FIXED: Leaderboard routes
+// FIXED: Leaderboard - ALL approved users (admin + student)
 // ============================================================
 async function handleLeaderboard(method, path, body, db, user) {
   if (method === 'GET' && path === '/leaderboard') {
@@ -652,19 +564,18 @@ async function handleLeaderboard(method, path, body, db, user) {
       const today = new Date().toISOString().split('T')[0];
       dateFilter = `AND s.study_date = '${today}'`;
     } else if (period === 'week') {
-      const ws = new Date(); 
-      ws.setDate(ws.getDate() - ws.getDay());
+      const ws = new Date(); ws.setDate(ws.getDate() - ws.getDay());
       dateFilter = `AND s.study_date >= '${ws.toISOString().split('T')[0]}'`;
     } else if (period === 'month') {
-      const ms = new Date(); 
-      ms.setDate(1);
+      const ms = new Date(); ms.setDate(1);
       dateFilter = `AND s.study_date >= '${ms.toISOString().split('T')[0]}'`;
     }
     
-    // FIXED: Only show approved, non-blocked students with actual study time > 0
+    // FIXED: Include ALL approved, non-blocked users regardless of role
     const leaderboard = await db.prepare(`
       SELECT 
-        u.id, u.username, u.name, COUNT(s.id) as session_count,
+        u.id, u.username, u.name, u.role,
+        COUNT(s.id) as session_count,
         COALESCE(SUM(CASE WHEN s.actual_end IS NOT NULL AND s.actual_start IS NOT NULL
           THEN (strftime('%s', s.actual_end) - strftime('%s', s.actual_start)) / 60.0 - COALESCE(s.lost_minutes, 0)
           ELSE 0 END), 0) as total_minutes,
@@ -673,9 +584,7 @@ async function handleLeaderboard(method, path, body, db, user) {
           ELSE 0 END), 0), 1) as total_hours
       FROM users u
       LEFT JOIN study_sessions s ON u.id = s.user_id ${dateFilter} AND s.status = 'Completed'
-      WHERE u.role = 'student' 
-        AND u.approved = 1 
-        AND u.blocked = 0
+      WHERE u.approved = 1 AND u.blocked = 0
       GROUP BY u.id
       HAVING total_minutes > 0
       ORDER BY total_minutes DESC
@@ -684,7 +593,6 @@ async function handleLeaderboard(method, path, body, db, user) {
     
     return json({ period, leaderboard: leaderboard.results });
   }
-  
   return err('Leaderboard route not found', 404);
 }
 
@@ -694,7 +602,7 @@ async function handleLeaderboard(method, path, body, db, user) {
 async function handleAdmin(method, path, body, db, user) {
   if (user.role !== 'admin') return err('Admin access required', 403);
   
-  // FIXED: Dashboard stats
+  // FIXED: Dashboard - include all users with study data
   if (method === 'GET' && path === '/admin/dashboard') {
     const totalUsers = await db.prepare('SELECT COUNT(*) as count FROM users').first();
     const approvedUsers = await db.prepare('SELECT COUNT(*) as count FROM users WHERE approved = 1 AND blocked = 0').first();
@@ -708,21 +616,18 @@ async function handleAdmin(method, path, body, db, user) {
       FROM study_sessions WHERE status = 'Completed'
     `).first();
     
-    // FIXED: Top students - only approved, non-blocked, with actual study time
+    // FIXED: Top users - all approved, non-blocked with study hours > 0
     const topUsers = await db.prepare(`
-      SELECT u.username, u.name, 
+      SELECT u.username, u.name, u.role,
         ROUND(COALESCE(SUM(CASE WHEN s.actual_end IS NOT NULL AND s.actual_start IS NOT NULL
           THEN (strftime('%s', s.actual_end) - strftime('%s', s.actual_start)) / 3600.0 - COALESCE(s.lost_minutes, 0)/60.0
           ELSE 0 END), 0), 1) as total_hours
       FROM users u
       LEFT JOIN study_sessions s ON u.id = s.user_id AND s.status = 'Completed'
-      WHERE u.role = 'student' 
-        AND u.approved = 1 
-        AND u.blocked = 0
+      WHERE u.approved = 1 AND u.blocked = 0
       GROUP BY u.id
       HAVING total_hours > 0
-      ORDER BY total_hours DESC 
-      LIMIT 10
+      ORDER BY total_hours DESC LIMIT 10
     `).all();
     
     return json({
@@ -736,7 +641,7 @@ async function handleAdmin(method, path, body, db, user) {
     });
   }
 
-  // FIXED: User list with proper search/count
+  // Users list
   if (method === 'GET' && path === '/admin/users') {
     const search = body.search || null;
     const role = body.role || null;
@@ -746,32 +651,21 @@ async function handleAdmin(method, path, body, db, user) {
     
     let whereParts = [];
     const params = [];
-    
-    if (search) { 
-      whereParts.push('(username LIKE ? OR email LIKE ? OR name LIKE ?)'); 
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`); 
-    }
+    if (search) { whereParts.push('(username LIKE ? OR email LIKE ? OR name LIKE ?)'); params.push(`%${search}%`, `%${search}%`, `%${search}%`); }
     if (role) { whereParts.push('role = ?'); params.push(role); }
     if (status === 'pending') { whereParts.push('approved = 0 AND blocked = 0'); }
     else if (status === 'approved') { whereParts.push('approved = 1 AND blocked = 0'); }
     else if (status === 'blocked') { whereParts.push('blocked = 1'); }
     
     const whereClause = whereParts.length > 0 ? 'WHERE ' + whereParts.join(' AND ') : '';
-    
-    // Count query
-    const countSql = `SELECT COUNT(*) as count FROM users ${whereClause}`;
-    const countResult = await db.prepare(countSql).bind(...params).first();
-    
-    // Data query
+    const countResult = await db.prepare(`SELECT COUNT(*) as count FROM users ${whereClause}`).bind(...params).first();
     const dataSql = `SELECT id, username, name, email, role, approved, blocked, created_at FROM users ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
     const dataParams = [...params, limit, (page - 1) * limit];
-    
     const users = await db.prepare(dataSql).bind(...dataParams).all();
-    
     return json({ users: users.results, total: countResult.count, page, limit });
   }
 
-  // Approve user
+  // Approve
   const approveMatch = path.match(/^\/admin\/users\/(\d+)\/approve$/);
   if (method === 'PUT' && approveMatch) {
     await db.prepare('UPDATE users SET approved = 1 WHERE id = ?').bind(approveMatch[1]).run();
@@ -780,7 +674,7 @@ async function handleAdmin(method, path, body, db, user) {
     return json({ message: 'User approved' });
   }
 
-  // Block user
+  // Block
   const blockMatch = path.match(/^\/admin\/users\/(\d+)\/block$/);
   if (method === 'PUT' && blockMatch) {
     await db.prepare('UPDATE users SET blocked = 1 WHERE id = ?').bind(blockMatch[1]).run();
@@ -789,7 +683,7 @@ async function handleAdmin(method, path, body, db, user) {
     return json({ message: 'User blocked' });
   }
 
-  // Unblock user
+  // Unblock
   const unblockMatch = path.match(/^\/admin\/users\/(\d+)\/unblock$/);
   if (method === 'PUT' && unblockMatch) {
     await db.prepare('UPDATE users SET blocked = 0 WHERE id = ?').bind(unblockMatch[1]).run();
@@ -798,7 +692,7 @@ async function handleAdmin(method, path, body, db, user) {
     return json({ message: 'User unblocked' });
   }
 
-  // Reset user data
+  // Reset
   const resetMatch = path.match(/^\/admin\/users\/(\d+)\/reset$/);
   if (method === 'PUT' && resetMatch) {
     await db.prepare('DELETE FROM study_sessions WHERE user_id = ?').bind(resetMatch[1]).run();
@@ -874,8 +768,7 @@ async function handleAdmin(method, path, body, db, user) {
   if (method === 'GET' && path === '/admin/audit-logs') {
     const logs = await db.prepare(`
       SELECT al.*, u.username as performer_name
-      FROM audit_logs al
-      LEFT JOIN users u ON al.performed_by = u.id
+      FROM audit_logs al LEFT JOIN users u ON al.performed_by = u.id
       ORDER BY al.created_at DESC LIMIT 100
     `).all();
     return json(logs.results);
@@ -920,9 +813,8 @@ export async function onRequest(context) {
   }
   
   let body = {};
-  
   if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
-    try { 
+    try {
       const contentType = request.headers.get('Content-Type') || '';
       if (contentType.includes('application/json')) {
         body = await request.json();
@@ -930,9 +822,7 @@ export async function onRequest(context) {
         const text = await request.text();
         try { body = JSON.parse(text); } catch { body = {}; }
       }
-    } catch {
-      body = {};
-    }
+    } catch { body = {}; }
   }
   
   if (method === 'GET' || method === 'DELETE') {
@@ -942,22 +832,18 @@ export async function onRequest(context) {
   }
   
   try {
-    if (path.startsWith('/auth')) {
-      return handleAuth(method, path, body, db);
-    }
+    if (path.startsWith('/auth')) return handleAuth(method, path, body, db);
     
-    const user = await getUser(request);
-    if (!user) {
-      return err('Authentication required', 401);
-    }
+    const authUser = await getUser(request);
+    if (!authUser) return err('Authentication required', 401);
     
-    if (path.startsWith('/user')) return handleUser(method, path, body, db, user);
-    if (path.startsWith('/sessions')) return handleSessions(method, path, body, db, user);
-    if (path.startsWith('/tasks')) return handleTasks(method, path, body, db, user);
-    if (path.startsWith('/notifications')) return handleNotifications(method, path, body, db, user);
-    if (path.startsWith('/stats')) return handleStats(method, path, body, db, user);
-    if (path.startsWith('/leaderboard')) return handleLeaderboard(method, path, body, db, user);
-    if (path.startsWith('/admin')) return handleAdmin(method, path, body, db, user);
+    if (path.startsWith('/user')) return handleUser(method, path, body, db, authUser);
+    if (path.startsWith('/sessions')) return handleSessions(method, path, body, db, authUser);
+    if (path.startsWith('/tasks')) return handleTasks(method, path, body, db, authUser);
+    if (path.startsWith('/notifications')) return handleNotifications(method, path, body, db, authUser);
+    if (path.startsWith('/stats')) return handleStats(method, path, body, db, authUser);
+    if (path.startsWith('/leaderboard')) return handleLeaderboard(method, path, body, db, authUser);
+    if (path.startsWith('/admin')) return handleAdmin(method, path, body, db, authUser);
     
     return err('Route not found', 404);
   } catch (e) {
