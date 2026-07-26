@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In — Timbr</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700&family=DM+Mono&family=Cabinet+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #05080f;
+  --surface: #0b0f1a;
+  --surface2: #111827;
+  --surface3: #161e2e;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.11);
+  --accent: #00d4aa;
+  --accent2: #00b894;
+  --accent-dim: rgba(0,212,170,0.08);
+  --white: #f0f4f8;
+  --gray: #7a8899;
+  --gray2: #a0adb8;
+  --red: #f0566a;
+  --red-dim: rgba(240,86,106,0.09);
+  --green: #10d48e;
+  --green-dim: rgba(16,212,142,0.09);
+  --orange: #f59e0b;
+  --orange-dim: rgba(245,158,11,0.09);
+  --radius: 9px;
+  --radius-lg: 13px;
+  --transition: .18s cubic-bezier(.4,0,.2,1);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Cabinet Grotesk', sans-serif;
+  background: var(--bg);
+  color: var(--white);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.login-container {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  width: 100%;
+  max-width: 420px;
+}
+.logo-area {
+  text-align: center;
+  margin-bottom: 32px;
+}
+.logo-area img { height: 40px; margin-bottom: 12px; }
+.logo-area h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px;
+  font-weight: 700;
+}
+.logo-area p { color: var(--gray); font-size: 14px; margin-top: 4px; }
+.form-group { margin-bottom: 20px; }
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray2);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.form-group input {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--white);
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 15px;
+  transition: border-color var(--transition);
+  outline: none;
+}
+.form-group input:focus { border-color: var(--accent); }
+.form-group input::placeholder { color: var(--gray); }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: var(--radius);
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition);
+  width: 100%;
+}
+.btn-primary {
+  background: var(--accent);
+  color: #05080f;
+}
+.btn-primary:hover { background: var(--accent2); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.error-msg {
+  background: var(--red-dim);
+  border: 1px solid rgba(240,86,106,0.3);
+  color: var(--red);
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  margin-bottom: 16px;
+  display: none;
+}
+.error-msg.show { display: block; }
+.extra-links {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 13px;
+  color: var(--gray);
+}
+.extra-links a { color: var(--accent); }
+.spinner {
+  width: 18px; height: 18px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: none;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.btn.loading .spinner { display: inline-block; }
+.btn.loading .btn-text { display: none; }
+@media (max-width: 480px) {
+  .login-container { padding: 28px 20px; }
+}
+</style>
+</head>
+<body>
+
+<div class="login-container">
+  <div class="logo-area">
+    <img src="/images/timbr.png" height="40" alt="Timbr">
+    <h1>Welcome Back</h1>
+    <p>Sign in to continue tracking</p>
+  </div>
+
+  <div class="error-msg" id="error"></div>
+
+  <form id="loginForm" autocomplete="off">
+    <div class="form-group">
+      <label for="email">Email</label>
+      <input type="email" id="email" placeholder="you@example.com" required autofocus>
+    </div>
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="Enter your password" required>
+    </div>
+    <button type="submit" class="btn btn-primary" id="submitBtn">
+      <span class="btn-text">Sign In</span>
+      <span class="spinner"></span>
+    </button>
+  </form>
+
+  <div class="extra-links">
+    Don't have an account? <a href="/register.html">Create one</a>
+  </div>
+</div>
+
+<script>
+const API_BASE = '/api';
+const errorEl = document.getElementById('error');
+const submitBtn = document.getElementById('submitBtn');
+const loginForm = document.getElementById('loginForm');
+
+function showError(msg) {
+  errorEl.textContent = msg;
+  errorEl.classList.add('show');
+}
+
+function hideError() {
+  errorEl.classList.remove('show');
+}
+
+function setLoading(loading) {
+  if (loading) {
+    submitBtn.classList.add('loading');
+    submitBtn.disabled = true;
+  } else {
+    submitBtn.classList.remove('loading');
+    submitBtn.disabled = false;
+  }
+}
+
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideError();
+  
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  
+  if (!email || !password) {
+    showError('Please fill in all fields');
+    return;
+  }
+  
+  setLoading(true);
+  
+  try {
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    
+    const data = await res.json();
+    
+    if (!res.ok) {
+      showError(data.error || 'Login failed');
+      setLoading(false);
+      return;
+    }
+    
+    localStorage.setItem('timbr_token', data.token);
+    localStorage.setItem('timbr_user', JSON.stringify(data.user));
+    
+    if (data.user.role === 'admin') {
+      // Check if master key is stored
+      const masterKey = sessionStorage.getItem('timbr_master_key');
+      if (!masterKey) {
+        window.location.href = '/admin.html';
+      } else {
+        window.location.href = '/admin.html';
+      }
+    } else {
+      window.location.href = '/dashboard.html';
+    }
+  } catch (err) {
+    showError('Network error. Please try again.');
+    setLoading(false);
+  }
+});
+
+// Check if already logged in
+const existingToken = localStorage.getItem('timbr_token');
+const existingUser = JSON.parse(localStorage.getItem('timbr_user') || 'null');
+if (existingToken && existingUser) {
+  if (existingUser.role === 'admin') {
+    window.location.href = '/admin.html';
+  } else {
+    window.location.href = '/dashboard.html';
+  }
+}
+</script>
+
+</body>
+</html>
