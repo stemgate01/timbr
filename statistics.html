@@ -232,7 +232,10 @@ a { color: var(--accent); text-decoration: none; }
   width: 100%;
   overflow-x: auto;
 }
-canvas { width: 100%; max-width: 100%; display: block; }
+canvas { 
+  display: block; 
+  max-width: 100%; 
+}
 
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
@@ -424,10 +427,7 @@ if (!token || !user) { window.location.href = '/login.html'; }
 const API_BASE = '/api';
 let currentPeriod = 'daily';
 const COLORS = ['#00d4aa', '#00b894', '#f59e0b', '#f0566a', '#7c3aed', '#3b82f6', '#10d48e', '#ec4899', '#06b6d4', '#f97316'];
-
-// Cache of last-drawn chart data per canvas, so a window resize can redraw
-// without re-fetching from the API.
-const lastChartCall = {}; // canvasId -> { type, data, labels }
+const lastChartCall = {};
 
 function esc(s) {
   const d = document.createElement('div');
@@ -473,7 +473,6 @@ function logout() {
   window.location.href = '/login.html';
 }
 
-// UI Setup
 document.getElementById('profileName').textContent = user.name || 'Student';
 document.getElementById('sidebarName').textContent = user.name || 'Student';
 document.getElementById('sidebarEmail').textContent = user.email || '';
@@ -509,36 +508,31 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 // ============================================================
-// Canvas Chart Helpers
+// FIXED: Canvas sizing — locks CSS display size to the height attribute
 // ============================================================
 function clearCanvas(canvas) {
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
   const cssHeight = parseInt(canvas.getAttribute('height'), 10) || 300;
+  const cssWidth = rect.width;
 
-  // FIX: previously only canvas.width/height (the backing-store size) were
-  // scaled by dpr, but canvas.style.height was never set. On any screen
-  // with dpr > 1 (basically every phone) the canvas's on-page CSS height
-  // defaulted to its intrinsic pixel height (height * dpr), so charts
-  // rendered 2-3x taller than intended and blew out the layout.
-  // Setting style.width/height locks the DISPLAYED size to the CSS pixel
-  // size, while width/height (the backing store) stays at the higher
-  // dpr-scaled resolution for crisp rendering.
-  canvas.style.width = rect.width + 'px';
+  // Lock the CSS display size
+  canvas.style.width = cssWidth + 'px';
   canvas.style.height = cssHeight + 'px';
-  canvas.width = rect.width * dpr;
-  canvas.height = cssHeight * dpr;
 
-  ctx.setTransform(1, 0, 0, 1, 0, 0); // reset scale before reapplying (avoids compounding on redraw)
+  // Set the backing store to the display size × devicePixelRatio for sharp rendering
+  canvas.width = Math.floor(cssWidth * dpr);
+  canvas.height = Math.floor(cssHeight * dpr);
+
+  // Reset transform and scale
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.scale(dpr, dpr);
-  ctx.clearRect(0, 0, rect.width, cssHeight);
-  return { ctx, w: rect.width, h: cssHeight };
+  ctx.clearRect(0, 0, cssWidth, cssHeight);
+
+  return { ctx, w: cssWidth, h: cssHeight };
 }
 
-// Skip drawing into a canvas that's hidden (e.g. subjectChart while the
-// Subjects tab is active) — getBoundingClientRect() returns 0 width there,
-// which used to still trigger a wasted/degenerate draw call.
 function isVisible(canvas) {
   return canvas.offsetParent !== null && canvas.getBoundingClientRect().width > 0;
 }
@@ -559,12 +553,11 @@ function drawBarChart(canvas, data, labels) {
   const cw = w - pad.left - pad.right;
   const ch = h - pad.top - pad.bottom;
   const maxVal = Math.max(...data, 1);
-  const barW = Math.min(40, cw / data.length - 10);
+  const barW = Math.min(40, cw / Math.max(data.length, 1) - 10);
   
   ctx.fillStyle = '#0b0f1a';
   ctx.fillRect(0, 0, w, h);
   
-  // Grid
   for (let i = 0; i <= 4; i++) {
     const y = pad.top + (ch / 4) * i;
     ctx.strokeStyle = 'rgba(255,255,255,0.05)';
@@ -576,7 +569,6 @@ function drawBarChart(canvas, data, labels) {
     ctx.fillText(Math.round(maxVal - (maxVal / 4) * i), pad.left - 8, y + 4);
   }
   
-  // Bars
   data.forEach((val, i) => {
     const barH = Math.max((val / maxVal) * ch, 1);
     const x = pad.left + i * (cw / data.length) + (cw / data.length - barW) / 2;
@@ -594,7 +586,7 @@ function drawBarChart(canvas, data, labels) {
     ctx.fillStyle = '#a0adb8';
     ctx.font = '10px "Cabinet Grotesk", sans-serif';
     ctx.textAlign = 'center';
-    const lbl = (labels[i] || '').length > 10 ? (labels[i] || '').slice(0, 9) + '…' : (labels[i] || '');
+    const lbl = (labels[i] || '').length > 10 ? (labels[i] || '').slice(0, 9) + '\u2026' : (labels[i] || '');
     ctx.fillText(lbl, x + barW / 2, h - pad.bottom + 18);
   });
 }
@@ -663,7 +655,6 @@ function drawLineChart(canvas, data, labels) {
   ctx.fillStyle = '#0b0f1a';
   ctx.fillRect(0, 0, w, h);
   
-  // Grid
   for (let i = 0; i <= 4; i++) {
     const y = pad.top + (ch / 4) * i;
     ctx.strokeStyle = 'rgba(255,255,255,0.05)';
@@ -675,7 +666,6 @@ function drawLineChart(canvas, data, labels) {
     ctx.fillText(Math.round(maxVal - (maxVal / 4) * i), pad.left - 8, y + 4);
   }
   
-  // Line
   if (data.length > 1) {
     ctx.strokeStyle = '#00d4aa';
     ctx.lineWidth = 2.5;
@@ -689,7 +679,6 @@ function drawLineChart(canvas, data, labels) {
     ctx.stroke();
   }
   
-  // Dots
   data.forEach((val, i) => {
     const x = data.length > 1 ? pad.left + (i / (data.length - 1)) * cw : pad.left + cw / 2;
     const y = pad.top + ch - (val / maxVal) * ch;
@@ -727,217 +716,129 @@ async function loadStats() {
   detailTable.innerHTML = '<div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text"></div>';
   
   try {
-    if (currentPeriod === 'subjects') {
-      await loadSubjectsTab(mainChart, subjectChart, subjectDistSection, detailTable);
-    } else if (currentPeriod === 'daily') {
-      await loadDailyTab(mainChart, subjectChart, subjectDistSection, detailTable);
-    } else if (currentPeriod === 'weekly') {
-      await loadWeeklyTab(mainChart, subjectChart, subjectDistSection, detailTable);
-    } else if (currentPeriod === 'monthly') {
-      await loadMonthlyTab(mainChart, subjectChart, subjectDistSection, detailTable);
-    } else if (currentPeriod === 'yearly') {
-      await loadYearlyTab(mainChart, subjectChart, subjectDistSection, detailTable);
-    }
+    if (currentPeriod === 'subjects') await loadSubjectsTab(mainChart, subjectChart, subjectDistSection, detailTable);
+    else if (currentPeriod === 'daily') await loadDailyTab(mainChart, subjectChart, subjectDistSection, detailTable);
+    else if (currentPeriod === 'weekly') await loadWeeklyTab(mainChart, subjectChart, subjectDistSection, detailTable);
+    else if (currentPeriod === 'monthly') await loadMonthlyTab(mainChart, subjectChart, subjectDistSection, detailTable);
+    else if (currentPeriod === 'yearly') await loadYearlyTab(mainChart, subjectChart, subjectDistSection, detailTable);
   } catch (e) {
     console.error('Stats error:', e);
     showToast('Failed to load statistics', 'error');
   }
 }
 
-// --- Subjects Tab ---
 async function loadSubjectsTab(mainChart, subjectChart, subjectDistSection, detailTable) {
   document.getElementById('chartTitle').textContent = 'Study Time by Subject';
   subjectDistSection.style.display = 'none';
-  
   const res = await api('GET', '/stats/subject-distribution');
   if (!res.ok) { showToast('Failed to load', 'error'); return; }
-  
   const data = res.data || [];
   if (data.length === 0) {
-    document.getElementById('statsGrid').innerHTML = `
-      <div class="stat-card"><div class="label">Total Subjects</div><div class="value">0</div></div>
-      <div class="stat-card"><div class="label">Total Minutes</div><div class="value">0</div></div>`;
-    detailTable.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><h3>No data yet</h3><p>Complete study sessions to see statistics.</p></div>';
-    drawBarChart(mainChart, [], []);
-    drawPieChart(subjectChart, [], []);
+    document.getElementById('statsGrid').innerHTML = `<div class="stat-card"><div class="label">Total Subjects</div><div class="value">0</div></div><div class="stat-card"><div class="label">Total Minutes</div><div class="value">0</div></div>`;
+    detailTable.innerHTML = '<div class="empty-state"><h3>No data yet</h3><p>Complete study sessions to see statistics.</p></div>';
+    drawBarChart(mainChart, [], []); drawPieChart(subjectChart, [], []);
     return;
   }
-  
   const labels = data.map(d => d.subject);
   const values = data.map(d => Math.round(d.total_minutes));
-  
   drawBarChart(mainChart, values, labels);
   drawPieChart(subjectChart, values, labels);
-  
   const totalMin = values.reduce((a,b) => a+b, 0);
-  const totalSessions = data.reduce((a,b) => a + b.total_sessions, 0);
-  
   document.getElementById('statsGrid').innerHTML = `
     <div class="stat-card"><div class="label">Subjects</div><div class="value">${data.length}</div></div>
     <div class="stat-card"><div class="label">Total Time</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div><div class="sub">${(totalMin/60).toFixed(1)} hours</div></div>
     <div class="stat-card"><div class="label">Top Subject</div><div class="value" style="font-size:20px;">${esc(data[0]?.subject || '-')}</div></div>
-    <div class="stat-card"><div class="label">Sessions</div><div class="value">${totalSessions}</div></div>`;
-  
-  detailTable.innerHTML = `<div class="table-wrap"><table>
-    <thead><tr><th>Subject</th><th>Sessions</th><th>Minutes</th><th>Hours</th></tr></thead>
-    <tbody>${data.map(d => `<tr><td>${esc(d.subject)}</td><td>${d.total_sessions}</td><td>${Math.round(d.total_minutes)}</td><td>${(d.total_minutes/60).toFixed(1)}</td></tr>`).join('')}</tbody>
-  </table></div>`;
+    <div class="stat-card"><div class="label">Sessions</div><div class="value">${data.reduce((a,b) => a + b.total_sessions, 0)}</div></div>`;
+  detailTable.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Subject</th><th>Sessions</th><th>Minutes</th><th>Hours</th></tr></thead><tbody>${data.map(d => `<tr><td>${esc(d.subject)}</td><td>${d.total_sessions}</td><td>${Math.round(d.total_minutes)}</td><td>${(d.total_minutes/60).toFixed(1)}</td></tr>`).join('')}</tbody></table></div>`;
 }
 
-// --- Daily Tab ---
 async function loadDailyTab(mainChart, subjectChart, subjectDistSection, detailTable) {
   document.getElementById('chartTitle').textContent = 'Daily Study Time';
   subjectDistSection.style.display = 'block';
-  
   const today = new Date().toISOString().split('T')[0];
   const res = await api('GET', '/stats/daily', { date: today });
   if (!res.ok) { showToast('Failed to load', 'error'); return; }
-  
   const data = res.data.stats || [];
-  
   if (data.length === 0) {
-    document.getElementById('statsGrid').innerHTML = `
-      <div class="stat-card"><div class="label">Today's Study</div><div class="value">0<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
-      <div class="stat-card"><div class="label">Sessions</div><div class="value">0</div></div>
-      <div class="stat-card"><div class="label">Lost Time</div><div class="value" style="color:var(--red);">0<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
-      <div class="stat-card"><div class="label">Completed</div><div class="value">0</div></div>`;
+    document.getElementById('statsGrid').innerHTML = `<div class="stat-card"><div class="label">Today's Study</div><div class="value">0<span style="font-size:14px;color:var(--gray);"> min</span></div></div><div class="stat-card"><div class="label">Sessions</div><div class="value">0</div></div><div class="stat-card"><div class="label">Lost Time</div><div class="value" style="color:var(--red);">0</div></div><div class="stat-card"><div class="label">Completed</div><div class="value">0</div></div>`;
     detailTable.innerHTML = '<div class="empty-state"><p style="color:var(--gray);">No sessions today.</p></div>';
     drawBarChart(mainChart, [], []);
   } else {
     const labels = data.map(d => d.subject);
     const values = data.map(d => Math.round(d.actual_minutes));
     drawBarChart(mainChart, values, labels);
-    
     const totalMin = values.reduce((a,b) => a+b, 0);
-    const totalLost = data.reduce((a,d) => a + Math.round(d.lost_minutes), 0);
     document.getElementById('statsGrid').innerHTML = `
       <div class="stat-card"><div class="label">Today's Study</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
-      <div class="stat-card"><div class="label">Lost Time</div><div class="value" style="color:var(--red);">${totalLost}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
+      <div class="stat-card"><div class="label">Lost Time</div><div class="value" style="color:var(--red);">${data.reduce((a,d) => a + Math.round(d.lost_minutes), 0)}</div></div>
       <div class="stat-card"><div class="label">Sessions</div><div class="value">${data.length}</div></div>
       <div class="stat-card"><div class="label">Completed</div><div class="value" style="color:var(--green);">${data.reduce((a,d) => a + d.completed, 0)}</div></div>`;
-    
-    detailTable.innerHTML = `<div class="table-wrap"><table>
-      <thead><tr><th>Subject</th><th>Sessions</th><th>Completed</th><th>Partial</th><th>Missed</th><th>Min</th><th>Lost</th></tr></thead>
-      <tbody>${data.map(d => `<tr><td>${esc(d.subject)}</td><td>${d.session_count}</td><td>${d.completed}</td><td>${d.partial}</td><td>${d.missed}</td><td>${Math.round(d.actual_minutes)}</td><td>${Math.round(d.lost_minutes)}</td></tr>`).join('')}</tbody>
-    </table></div>`;
+    detailTable.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Subject</th><th>Sessions</th><th>Completed</th><th>Partial</th><th>Missed</th><th>Min</th><th>Lost</th></tr></thead><tbody>${data.map(d => `<tr><td>${esc(d.subject)}</td><td>${d.session_count}</td><td>${d.completed}</td><td>${d.partial}</td><td>${d.missed}</td><td>${Math.round(d.actual_minutes)}</td><td>${Math.round(d.lost_minutes)}</td></tr>`).join('')}</tbody></table></div>`;
   }
-  
-  // Subject pie
   const subRes = await api('GET', '/stats/subject-distribution');
-  if (subRes.ok && subRes.data?.length) {
-    drawPieChart(subjectChart, subRes.data.map(d => Math.round(d.total_minutes)), subRes.data.map(d => d.subject));
-  } else {
-    drawPieChart(subjectChart, [], []);
-  }
+  drawPieChart(subjectChart, (subRes.ok && subRes.data?.length) ? subRes.data.map(d => Math.round(d.total_minutes)) : [], (subRes.ok && subRes.data?.length) ? subRes.data.map(d => d.subject) : []);
 }
 
-// --- Weekly Tab ---
 async function loadWeeklyTab(mainChart, subjectChart, subjectDistSection, detailTable) {
   document.getElementById('chartTitle').textContent = 'Weekly Study Time';
   subjectDistSection.style.display = 'block';
-  
   const res = await api('GET', '/stats/weekly');
   if (!res.ok) { showToast('Failed to load', 'error'); return; }
-  
   const data = res.data.stats || [];
-  
   if (data.length === 0) {
-    document.getElementById('statsGrid').innerHTML = `
-      <div class="stat-card"><div class="label">Weekly Total</div><div class="value">0<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
-      <div class="stat-card"><div class="label">Sessions</div><div class="value">0</div></div>
-      <div class="stat-card"><div class="label">Avg/Day</div><div class="value">0<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
-      <div class="stat-card"><div class="label">Lost Time</div><div class="value" style="color:var(--red);">0</div></div>`;
+    document.getElementById('statsGrid').innerHTML = `<div class="stat-card"><div class="label">Weekly Total</div><div class="value">0</div></div><div class="stat-card"><div class="label">Sessions</div><div class="value">0</div></div><div class="stat-card"><div class="label">Avg/Day</div><div class="value">0</div></div><div class="stat-card"><div class="label">Lost Time</div><div class="value" style="color:var(--red);">0</div></div>`;
     detailTable.innerHTML = '<div class="empty-state"><p style="color:var(--gray);">No study data this week.</p></div>';
     drawBarChart(mainChart, [], []);
   } else {
     const labels = data.map(d => (d.study_date || '').slice(5));
     const values = data.map(d => Math.round(d.actual_minutes));
     drawBarChart(mainChart, values, labels);
-    
     const totalMin = values.reduce((a,b) => a+b, 0);
-    const totalLost = data.reduce((a,d) => a + Math.round(d.lost_minutes), 0);
-    const totalSessions = data.reduce((a,d) => a + d.session_count, 0);
     document.getElementById('statsGrid').innerHTML = `
       <div class="stat-card"><div class="label">Weekly Total</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div><div class="sub">${(totalMin/60).toFixed(1)} hours</div></div>
-      <div class="stat-card"><div class="label">Lost Time</div><div class="value" style="color:var(--red);">${totalLost}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
-      <div class="stat-card"><div class="label">Sessions</div><div class="value">${totalSessions}</div></div>
+      <div class="stat-card"><div class="label">Lost Time</div><div class="value" style="color:var(--red);">${data.reduce((a,d) => a + Math.round(d.lost_minutes), 0)}</div></div>
+      <div class="stat-card"><div class="label">Sessions</div><div class="value">${data.reduce((a,d) => a + d.session_count, 0)}</div></div>
       <div class="stat-card"><div class="label">Avg/Day</div><div class="value">${Math.round(totalMin / Math.max(data.length, 1))}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>`;
-    
-    detailTable.innerHTML = `<div class="table-wrap"><table>
-      <thead><tr><th>Date</th><th>Sessions</th><th>Completed</th><th>Minutes</th><th>Lost</th></tr></thead>
-      <tbody>${data.map(d => `<tr><td>${esc(d.study_date)}</td><td>${d.session_count}</td><td>${d.completed}</td><td>${Math.round(d.actual_minutes)}</td><td>${Math.round(d.lost_minutes)}</td></tr>`).join('')}</tbody>
-    </table></div>`;
+    detailTable.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Date</th><th>Sessions</th><th>Completed</th><th>Minutes</th><th>Lost</th></tr></thead><tbody>${data.map(d => `<tr><td>${esc(d.study_date)}</td><td>${d.session_count}</td><td>${d.completed}</td><td>${Math.round(d.actual_minutes)}</td><td>${Math.round(d.lost_minutes)}</td></tr>`).join('')}</tbody></table></div>`;
   }
-  
   const subRes = await api('GET', '/stats/subject-distribution');
-  if (subRes.ok && subRes.data?.length) {
-    drawPieChart(subjectChart, subRes.data.map(d => Math.round(d.total_minutes)), subRes.data.map(d => d.subject));
-  } else {
-    drawPieChart(subjectChart, [], []);
-  }
+  drawPieChart(subjectChart, (subRes.ok && subRes.data?.length) ? subRes.data.map(d => Math.round(d.total_minutes)) : [], (subRes.ok && subRes.data?.length) ? subRes.data.map(d => d.subject) : []);
 }
 
-// --- Monthly Tab ---
 async function loadMonthlyTab(mainChart, subjectChart, subjectDistSection, detailTable) {
   document.getElementById('chartTitle').textContent = 'Monthly Study by Subject';
   subjectDistSection.style.display = 'block';
-  
   const res = await api('GET', '/stats/monthly');
   if (!res.ok) { showToast('Failed to load', 'error'); return; }
-  
   const data = res.data.stats || [];
-  
   if (data.length === 0) {
-    document.getElementById('statsGrid').innerHTML = `
-      <div class="stat-card"><div class="label">Monthly Total</div><div class="value">0<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
-      <div class="stat-card"><div class="label">Subjects</div><div class="value">0</div></div>
-      <div class="stat-card"><div class="label">Sessions</div><div class="value">0</div></div>
-      <div class="stat-card"><div class="label">Top Subject</div><div class="value" style="font-size:18px;">-</div></div>`;
+    document.getElementById('statsGrid').innerHTML = `<div class="stat-card"><div class="label">Monthly Total</div><div class="value">0</div></div><div class="stat-card"><div class="label">Subjects</div><div class="value">0</div></div><div class="stat-card"><div class="label">Sessions</div><div class="value">0</div></div><div class="stat-card"><div class="label">Top Subject</div><div class="value">-</div></div>`;
     detailTable.innerHTML = '<div class="empty-state"><p style="color:var(--gray);">No study data this month.</p></div>';
     drawBarChart(mainChart, [], []);
   } else {
     const labels = data.map(d => d.subject);
     const values = data.map(d => Math.round(d.actual_minutes));
     drawBarChart(mainChart, values, labels);
-    
     const totalMin = values.reduce((a,b) => a+b, 0);
-    const totalSessions = data.reduce((a,d) => a + d.session_count, 0);
     document.getElementById('statsGrid').innerHTML = `
       <div class="stat-card"><div class="label">Monthly Total</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div><div class="sub">${(totalMin/60).toFixed(1)} hours</div></div>
-      <div class="stat-card"><div class="label">Sessions</div><div class="value">${totalSessions}</div></div>
+      <div class="stat-card"><div class="label">Sessions</div><div class="value">${data.reduce((a,d) => a + d.session_count, 0)}</div></div>
       <div class="stat-card"><div class="label">Subjects</div><div class="value">${data.length}</div></div>
       <div class="stat-card"><div class="label">Top Subject</div><div class="value" style="font-size:18px;">${esc(data[0]?.subject || '-')}</div></div>`;
-    
-    detailTable.innerHTML = `<div class="table-wrap"><table>
-      <thead><tr><th>Subject</th><th>Sessions</th><th>Completed</th><th>Minutes</th><th>Hours</th></tr></thead>
-      <tbody>${data.map(d => `<tr><td>${esc(d.subject)}</td><td>${d.session_count}</td><td>${d.completed}</td><td>${Math.round(d.actual_minutes)}</td><td>${(d.actual_minutes/60).toFixed(1)}</td></tr>`).join('')}</tbody>
-    </table></div>`;
+    detailTable.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Subject</th><th>Sessions</th><th>Completed</th><th>Minutes</th><th>Hours</th></tr></thead><tbody>${data.map(d => `<tr><td>${esc(d.subject)}</td><td>${d.session_count}</td><td>${d.completed}</td><td>${Math.round(d.actual_minutes)}</td><td>${(d.actual_minutes/60).toFixed(1)}</td></tr>`).join('')}</tbody></table></div>`;
   }
-  
   const subRes = await api('GET', '/stats/subject-distribution');
-  if (subRes.ok && subRes.data?.length) {
-    drawPieChart(subjectChart, subRes.data.map(d => Math.round(d.total_minutes)), subRes.data.map(d => d.subject));
-  } else {
-    drawPieChart(subjectChart, [], []);
-  }
+  drawPieChart(subjectChart, (subRes.ok && subRes.data?.length) ? subRes.data.map(d => Math.round(d.total_minutes)) : [], (subRes.ok && subRes.data?.length) ? subRes.data.map(d => d.subject) : []);
 }
 
-// --- Yearly Tab ---
 async function loadYearlyTab(mainChart, subjectChart, subjectDistSection, detailTable) {
   document.getElementById('chartTitle').textContent = 'Yearly Study Trend';
   subjectDistSection.style.display = 'block';
-  
   const res = await api('GET', '/sessions', { limit: '1000', page: '1' });
   if (!res.ok) { showToast('Failed to load', 'error'); return; }
-  
   const sessions = res.data.sessions || [];
-  
   if (sessions.length === 0) {
-    document.getElementById('statsGrid').innerHTML = `
-      <div class="stat-card"><div class="label">Yearly Total</div><div class="value">0<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
-      <div class="stat-card"><div class="label">Active Months</div><div class="value">0</div></div>
-      <div class="stat-card"><div class="label">Avg/Month</div><div class="value">0</div></div>
-      <div class="stat-card"><div class="label">Sessions</div><div class="value">0</div></div>`;
+    document.getElementById('statsGrid').innerHTML = `<div class="stat-card"><div class="label">Yearly Total</div><div class="value">0</div></div><div class="stat-card"><div class="label">Active Months</div><div class="value">0</div></div><div class="stat-card"><div class="label">Avg/Month</div><div class="value">0</div></div><div class="stat-card"><div class="label">Sessions</div><div class="value">0</div></div>`;
     detailTable.innerHTML = '<div class="empty-state"><p style="color:var(--gray);">No study data this year.</p></div>';
     drawLineChart(mainChart, [], []);
   } else {
@@ -949,36 +850,21 @@ async function loadYearlyTab(mainChart, subjectChart, subjectDistSection, detail
         if (mins > 0) monthlyData[month] = (monthlyData[month] || 0) + mins;
       }
     });
-    
     const months = Object.keys(monthlyData).sort();
     const values = months.map(m => monthlyData[m]);
-    
     drawLineChart(mainChart, values, months.map(m => m.slice(5)));
-    
     const totalMin = values.reduce((a,b) => a+b, 0);
     document.getElementById('statsGrid').innerHTML = `
       <div class="stat-card"><div class="label">Yearly Total</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div><div class="sub">${(totalMin/60).toFixed(1)} hours</div></div>
       <div class="stat-card"><div class="label">Active Months</div><div class="value">${months.length}</div></div>
-      <div class="stat-card"><div class="label">Avg/Month</div><div class="value">${Math.round(totalMin / Math.max(months.length, 1))}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
+      <div class="stat-card"><div class="label">Avg/Month</div><div class="value">${Math.round(totalMin / Math.max(months.length, 1))}</div></div>
       <div class="stat-card"><div class="label">Sessions</div><div class="value">${sessions.length}</div></div>`;
-    
-    detailTable.innerHTML = months.length ? `<div class="table-wrap"><table>
-      <thead><tr><th>Month</th><th>Minutes</th><th>Hours</th></tr></thead>
-      <tbody>${months.map(m => `<tr><td>${esc(m)}</td><td>${monthlyData[m]}</td><td>${(monthlyData[m]/60).toFixed(1)}</td></tr>`).join('')}</tbody>
-    </table></div>` : '<div class="empty-state"><p style="color:var(--gray);">No completed sessions with time data.</p></div>';
+    detailTable.innerHTML = months.length ? `<div class="table-wrap"><table><thead><tr><th>Month</th><th>Minutes</th><th>Hours</th></tr></thead><tbody>${months.map(m => `<tr><td>${esc(m)}</td><td>${monthlyData[m]}</td><td>${(monthlyData[m]/60).toFixed(1)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty-state"><p style="color:var(--gray);">No completed sessions with time data.</p></div>';
   }
-  
   const subRes = await api('GET', '/stats/subject-distribution');
-  if (subRes.ok && subRes.data?.length) {
-    drawPieChart(subjectChart, subRes.data.map(d => Math.round(d.total_minutes)), subRes.data.map(d => d.subject));
-  } else {
-    drawPieChart(subjectChart, [], []);
-  }
+  drawPieChart(subjectChart, (subRes.ok && subRes.data?.length) ? subRes.data.map(d => Math.round(d.total_minutes)) : [], (subRes.ok && subRes.data?.length) ? subRes.data.map(d => d.subject) : []);
 }
 
-// ============================================================
-// Notifications Badge
-// ============================================================
 async function loadNotifBadge() {
   const res = await api('GET', '/notifications/unread-count');
   if (res.ok && res.data.count > 0) {
@@ -988,17 +874,10 @@ async function loadNotifBadge() {
   }
 }
 
-// ============================================================
-// Init
-// ============================================================
 loadStats();
 loadNotifBadge();
 setInterval(loadNotifBadge, 60000);
 
-// FIX: previously every resize re-ran loadStats(), which re-hit the API
-// (4+ requests) just to redraw canvases. A resize only changes layout
-// width, not the underlying data, so just redraw from the cached
-// data/labels for whichever canvases are currently visible.
 let resizeTimeout;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimeout);
