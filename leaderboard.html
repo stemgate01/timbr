@@ -481,11 +481,27 @@ function showToast(msg, type='success') {
   setTimeout(() => t.classList.remove('show'), 3500);
 }
 
+// FIXED: api() function - GET requests use query string
 async function api(method, path, body) {
   try {
     const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }};
-    if (body) opts.body = JSON.stringify(body);
-    const res = await fetch(API_BASE + path, opts);
+    
+    let url = API_BASE + path;
+    
+    if (method === 'GET' && body) {
+      const params = new URLSearchParams();
+      for (const [key, value] of Object.entries(body)) {
+        if (value !== undefined && value !== null && value !== '') {
+          params.append(key, String(value));
+        }
+      }
+      const qs = params.toString();
+      if (qs) url += '?' + qs;
+    } else if (body) {
+      opts.body = JSON.stringify(body);
+    }
+    
+    const res = await fetch(url, opts);
     const data = await res.json();
     return { ok: res.ok, data, status: res.status };
   } catch(e) {
@@ -542,31 +558,22 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 // ============================================================
 // Load Leaderboard
 // ============================================================
-async function api(method, path, body) {
-  try {
-    const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }};
-    
-    let url = API_BASE + path;
-    if (method === 'GET' && body) {
-      const params = new URLSearchParams();
-      for (const [key, value] of Object.entries(body)) {
-        if (value !== undefined && value !== null && value !== '') {
-          params.append(key, value);
-        }
-      }
-      const qs = params.toString();
-      if (qs) url += '?' + qs;
-    } else if (body) {
-      opts.body = JSON.stringify(body);
-    }
-    
-    const res = await fetch(url, opts);
-    const data = await res.json();
-    return { ok: res.ok, data, status: res.status };
-  } catch(e) {
-    return { ok: false, data: { error: 'Network error. Please try again.' }, status: 0 };
+async function loadLeaderboard() {
+  const podium = document.getElementById('podium');
+  const list = document.getElementById('leaderboardList');
+  
+  podium.innerHTML = '<div class="skeleton skeleton-text" style="height:100px;"></div>';
+  list.innerHTML = '<div class="leaderboard-item"><div class="skeleton skeleton-text"></div></div><div class="leaderboard-item"><div class="skeleton skeleton-text"></div></div>';
+
+  // Pass period as query param
+  const res = await api('GET', '/leaderboard', { period: currentPeriod });
+  
+  if (!res.ok) {
+    showToast('Failed to load leaderboard', 'error');
+    podium.innerHTML = '';
+    list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gray);">Failed to load. <button class="btn btn-outline btn-sm" onclick="loadLeaderboard()">Retry</button></div>';
+    return;
   }
-}
 
   const data = res.data.leaderboard || [];
   
@@ -578,22 +585,18 @@ async function api(method, path, body) {
 
   // Podium (top 3)
   const top3 = data.slice(0, 3);
-  const positions = [
-    { cls: 'gold', rank: '1', rankCls: 'gold', svg: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 6 9 6 9z"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 18 9 18 9z"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>' },
-    { cls: 'silver', rank: '2', rankCls: 'silver' },
-    { cls: 'bronze', rank: '3', rankCls: 'bronze' }
-  ];
   
   // Reorder for podium: 2nd, 1st, 3rd
-  const podiumOrder = top3.length === 3 ? [top3[1], top3[0], top3[2]] : top3.length === 2 ? [top3[1], top3[0]] : top3;
+  const podiumOrder = top3.length === 3 ? [top3[1], top3[0], top3[2]] : top3.length === 2 ? [top3[0], top3[1]] : top3;
   const podiumClasses = top3.length === 3 ? ['silver', 'gold', 'bronze'] : top3.length === 2 ? ['gold', 'silver'] : ['gold'];
   
   podium.innerHTML = podiumOrder.map((entry, i) => {
     const cls = podiumClasses[i];
     const initials = (entry.name || entry.username).charAt(0).toUpperCase();
+    const rankMap = { gold: '1', silver: '2', bronze: '3' };
     return `
       <div class="podium-item ${cls}">
-        <div class="podium-rank ${cls}">${cls === 'gold' ? '1' : cls === 'silver' ? '2' : '3'}</div>
+        <div class="podium-rank ${cls}">${rankMap[cls]}</div>
         <div class="podium-avatar">${esc(initials)}</div>
         <div class="podium-name">${esc(entry.name)}</div>
         <div class="podium-hours">${parseFloat(entry.total_hours).toFixed(1)} hrs</div>
@@ -622,7 +625,7 @@ async function api(method, path, body) {
       </div>`;
   }).join('');
   
-  // If user not in top results, show their position at bottom
+  // If user not in top results
   const userInList = data.find(d => d.id === user.id);
   if (!userInList && data.length > 0) {
     list.innerHTML += `
