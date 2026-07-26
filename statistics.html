@@ -468,11 +468,27 @@ function showToast(msg, type='success') {
   setTimeout(() => t.classList.remove('show'), 3500);
 }
 
+// FIXED: api() function - GET requests use query string
 async function api(method, path, body) {
   try {
     const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }};
-    if (body) opts.body = JSON.stringify(body);
-    const res = await fetch(API_BASE + path, opts);
+    
+    let url = API_BASE + path;
+    
+    if (method === 'GET' && body) {
+      const params = new URLSearchParams();
+      for (const [key, value] of Object.entries(body)) {
+        if (value !== undefined && value !== null && value !== '') {
+          params.append(key, String(value));
+        }
+      }
+      const qs = params.toString();
+      if (qs) url += '?' + qs;
+    } else if (body) {
+      opts.body = JSON.stringify(body);
+    }
+    
+    const res = await fetch(url, opts);
     const data = await res.json();
     return { ok: res.ok, data, status: res.status };
   } catch(e) {
@@ -544,15 +560,12 @@ function drawBarChart(canvas, data, labels, colors) {
   const chartH = h - padding.top - padding.bottom;
   
   ctx.clearRect(0, 0, w, h);
-  
-  // Background
   ctx.fillStyle = '#0b0f1a';
   ctx.fillRect(0, 0, w, h);
   
   const maxVal = Math.max(...data, 1);
   const barWidth = Math.min(40, chartW / data.length - 8);
   
-  // Grid lines
   ctx.strokeStyle = 'rgba(255,255,255,0.05)';
   ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i++) {
@@ -568,7 +581,6 @@ function drawBarChart(canvas, data, labels, colors) {
     ctx.fillText(Math.round(maxVal - (maxVal / 4) * i), padding.left - 8, y + 4);
   }
   
-  // Bars
   data.forEach((val, i) => {
     const barH = (val / maxVal) * chartH;
     const x = padding.left + i * (chartW / data.length) + (chartW / data.length - barWidth) / 2;
@@ -579,15 +591,14 @@ function drawBarChart(canvas, data, labels, colors) {
     ctx.roundRect(x, y, barWidth, barH, [4, 4, 0, 0]);
     ctx.fill();
     
-    // Label
     ctx.fillStyle = '#a0adb8';
     ctx.font = '10px "Cabinet Grotesk", sans-serif';
     ctx.textAlign = 'center';
     const label = labels[i];
-    if (label.length > 6) {
-      ctx.fillText(label.slice(0, 6) + '..', x + barWidth / 2, h - padding.bottom + 18);
+    if (label && label.length > 8) {
+      ctx.fillText(label.slice(0, 8) + '..', x + barWidth / 2, h - padding.bottom + 18);
     } else {
-      ctx.fillText(label, x + barWidth / 2, h - padding.bottom + 18);
+      ctx.fillText(label || '', x + barWidth / 2, h - padding.bottom + 18);
     }
   });
 }
@@ -631,7 +642,6 @@ function drawPieChart(canvas, data, labels, colors) {
     ctx.closePath();
     ctx.fill();
     
-    // Label
     const midAngle = startAngle + sliceAngle / 2;
     const labelX = cx + Math.cos(midAngle) * (radius + 30);
     const labelY = cy + Math.sin(midAngle) * (radius + 30);
@@ -639,7 +649,7 @@ function drawPieChart(canvas, data, labels, colors) {
     ctx.fillStyle = '#f0f4f8';
     ctx.font = '11px "Cabinet Grotesk", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(labels[i], labelX, labelY);
+    ctx.fillText(labels[i] || '', labelX, labelY);
     ctx.fillText(Math.round(val) + ' min', labelX, labelY + 14);
     
     startAngle += sliceAngle;
@@ -666,7 +676,6 @@ function drawLineChart(canvas, data, labels) {
   
   const maxVal = Math.max(...data, 1);
   
-  // Grid
   ctx.strokeStyle = 'rgba(255,255,255,0.05)';
   ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i++) {
@@ -682,13 +691,12 @@ function drawLineChart(canvas, data, labels) {
     ctx.fillText(Math.round(maxVal - (maxVal / 4) * i), padding.left - 8, y + 4);
   }
   
-  // Line
   ctx.strokeStyle = '#00d4aa';
   ctx.lineWidth = 2.5;
   ctx.beginPath();
   
   data.forEach((val, i) => {
-    const x = padding.left + (i / (data.length - 1 || 1)) * chartW;
+    const x = padding.left + (i / Math.max(data.length - 1, 1)) * chartW;
     const y = padding.top + chartH - (val / maxVal) * chartH;
     
     if (i === 0) ctx.moveTo(x, y);
@@ -696,9 +704,8 @@ function drawLineChart(canvas, data, labels) {
   });
   ctx.stroke();
   
-  // Dots
   data.forEach((val, i) => {
-    const x = padding.left + (i / (data.length - 1 || 1)) * chartW;
+    const x = padding.left + (i / Math.max(data.length - 1, 1)) * chartW;
     const y = padding.top + chartH - (val / maxVal) * chartH;
     
     ctx.fillStyle = '#00d4aa';
@@ -721,7 +728,6 @@ async function loadStats() {
   const subjectChart = document.getElementById('subjectChart');
   const subjectDistSection = document.getElementById('subjectDistSection');
   
-  // Show loading
   document.getElementById('statsGrid').innerHTML = `
     <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
     <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>
@@ -729,7 +735,6 @@ async function loadStats() {
     <div class="stat-card"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text" style="height:32px;"></div></div>`;
   
   if (currentPeriod === 'subjects') {
-    // Subject distribution
     document.getElementById('chartTitle').textContent = 'Subject Distribution';
     subjectDistSection.style.display = 'none';
     
@@ -744,7 +749,6 @@ async function loadStats() {
     drawPieChart(subjectChart, values, labels, colors);
     drawBarChart(mainChart, values, labels, colors);
     
-    // Stats
     const totalMin = values.reduce((a,b) => a+b, 0);
     document.getElementById('statsGrid').innerHTML = `
       <div class="stat-card"><div class="label">Total Subjects</div><div class="value">${data.length}</div></div>
@@ -752,7 +756,6 @@ async function loadStats() {
       <div class="stat-card"><div class="label">Top Subject</div><div class="value" style="font-size:18px;">${esc(data[0]?.subject || '-')}</div></div>
       <div class="stat-card"><div class="label">Total Sessions</div><div class="value">${data.reduce((a,b) => a + b.total_sessions, 0)}</div></div>`;
     
-    // Table
     document.getElementById('detailTable').innerHTML = data.length ? `
       <div class="table-wrap"><table>
         <thead><tr><th>Subject</th><th>Sessions</th><th>Total Minutes</th><th>Hours</th></tr></thead>
@@ -770,12 +773,10 @@ async function loadStats() {
     const data = res.data.stats || [];
     const labels = data.map(d => d.subject);
     const actualMins = data.map(d => Math.round(d.actual_minutes));
-    const lostMins = data.map(d => Math.round(d.lost_minutes));
     const colors = ['#00d4aa', '#f0566a', '#f59e0b', '#7c3aed', '#3b82f6'];
     
     drawBarChart(mainChart, actualMins, labels, colors);
     
-    // Subject chart
     const subRes = await api('GET', '/stats/subject-distribution');
     if (subRes.ok) {
       const subData = subRes.data || [];
@@ -783,7 +784,7 @@ async function loadStats() {
     }
     
     const totalMin = actualMins.reduce((a,b) => a+b, 0);
-    const totalLost = lostMins.reduce((a,b) => a+b, 0);
+    const totalLost = data.reduce((a,d) => a + Math.round(d.lost_minutes), 0);
     document.getElementById('statsGrid').innerHTML = `
       <div class="stat-card"><div class="label">Today's Study</div><div class="value">${totalMin}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
       <div class="stat-card"><div class="label">Lost Time</div><div class="value" style="color:var(--red);">${totalLost}<span style="font-size:14px;color:var(--gray);"> min</span></div></div>
@@ -804,7 +805,7 @@ async function loadStats() {
     if (!res.ok) { showToast('Failed to load', 'error'); return; }
     
     const data = res.data.stats || [];
-    const labels = data.map(d => d.study_date.slice(5));
+    const labels = data.map(d => d.study_date ? d.study_date.slice(5) : '');
     const values = data.map(d => Math.round(d.actual_minutes));
     const colors = ['#00d4aa', '#00b894', '#10d48e', '#34d399', '#6ee7b7', '#a7f3d0', '#d1fae5'];
     
@@ -867,7 +868,6 @@ async function loadStats() {
     subjectDistSection.style.display = 'block';
     document.getElementById('chartTitle').textContent = 'Yearly Study Trend';
     
-    // Get all sessions and group by month
     const res = await api('GET', '/sessions', { limit: 1000 });
     if (!res.ok) { showToast('Failed to load', 'error'); return; }
     
@@ -875,7 +875,7 @@ async function loadStats() {
     const monthlyData = {};
     
     sessions.forEach(s => {
-      if (s.actual_start && s.actual_end) {
+      if (s.actual_start && s.actual_end && s.study_date) {
         const month = s.study_date.slice(0, 7);
         const mins = Math.round((new Date(s.actual_end) - new Date(s.actual_start)) / 60000) - (s.lost_minutes || 0);
         monthlyData[month] = (monthlyData[month] || 0) + Math.max(0, mins);
@@ -884,7 +884,6 @@ async function loadStats() {
     
     const months = Object.keys(monthlyData).sort();
     const values = months.map(m => monthlyData[m]);
-    const colors = Array(months.length).fill('#00d4aa');
     
     drawLineChart(mainChart, values, months.map(m => m.slice(5)));
     
@@ -928,7 +927,6 @@ loadStats();
 loadNotifBadge();
 setInterval(loadNotifBadge, 60000);
 
-// Redraw charts on resize
 window.addEventListener('resize', () => { loadStats(); });
 </script>
 </body>
